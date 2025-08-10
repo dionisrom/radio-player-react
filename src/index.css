@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Glassmorphism styles */
+.glass {
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(8px) saturate(120%);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.dark .glass {
+  background: rgba(17,24,39,0.45);
+  border: 1px solid rgba(255,255,255,0.04);
+}
+body {
+  @apply bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-gray-100;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+/* small helpers */
+.toggle-checkbox {
+  width: 40px;
+  height: 22px;
+}
+
+/* vertical slider styles */
+.vertical-slider {
+  writing-mode: bt-lr; /* bottom to top, left to right */
+  -webkit-appearance: none;
+  width: 8px;
+  height: 120px;
+  background: transparent;
+}
+.vertical-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid rgba(0,0,0,0.2);
+}
+.vertical-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid rgba(0,0,0,0.2);
+}
