@@ -22,7 +22,7 @@ function getPresets() {
   return { ...BASE_PRESETS };
 }
 
-export default function Player({ station, onClose, toggleFavorite, isFavorite, setVisBg, setAnalyserRef, setAudioCtxFromApp }) {
+export default function Player({ station, onClose, toggleFavorite, isFavorite, setVisBg, setAnalyserRef, setAudioCtxFromApp, recentlyPlayed = [] }) {
   const audioRef = useRef(null);
   const [audioCtx, setAudioCtx] = useState(null);
   const sourceRef = useRef(null);
@@ -331,9 +331,20 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
               <select
                 value={selectedPreset}
                 onChange={e => applyPreset(e.target.value)}
-                className="rounded-lg border border-blue-300 dark:border-blue-700 bg-white/80 dark:bg-gray-900 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 transition shadow-sm hover:border-blue-400 dark:hover:border-blue-500"
-                style={{ minWidth: 90 }}
+                className="rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 transition shadow"
+                style={{
+                  minWidth: 90,
+                  background: 'var(--glass-bg, rgba(255,255,255,0.35))',
+                  color: 'var(--glass-fg, #1e293b)',
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                  border: '1px solid rgba(255,255,255,0.25)',
+                  boxShadow: '0 8px 32px 0 rgba(31,38,135,0.10)',
+                  borderRadius: '0.75rem',
+                  transition: 'background 0.2s, color 0.2s',
+                }}
               >
+                {/* glassmorphism theme effect is handled at the top of the component with useEffect */}
                 {Object.keys(presets).map(k => <option key={k} value={k}>{k}</option>)}
               </select>
               <button
@@ -365,6 +376,23 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
           </div>
         </div>
       </div>
+
+
+      {/* Recently Played List */}
+      {recentlyPlayed.length > 0 && (
+        <div className="mt-6">
+          <div className="font-semibold text-sm mb-2 opacity-80">Recently Played</div>
+          <ul className="space-y-1">
+            {recentlyPlayed.map(st => (
+              <li key={st.stationuuid} className="flex items-center gap-2 px-2 py-1 rounded-lg bg-white/20 dark:bg-black/20 backdrop-blur-sm hover:bg-white/30 dark:hover:bg-black/30 transition cursor-pointer"
+                  onClick={() => st.stationuuid !== station?.stationuuid && st.name && onClose ? onClose() || setTimeout(() => window.dispatchEvent(new CustomEvent('select-station', { detail: st })), 0) : undefined}>
+                <span className="truncate flex-1" title={st.name}>{st.name}</span>
+                <span className="text-xs text-gray-400">{st.country}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <audio key={audioKey} ref={audioRef} />
 

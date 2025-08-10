@@ -32,6 +32,7 @@ export default function App() {
   const [visBg, setVisBg] = useState(false) // visualization as background toggle
   const [analyserRef, setAnalyserRef] = useState(null)
   const [audioCtx, setAudioCtx] = useState(null)
+  const [recentlyPlayed, setRecentlyPlayed] = useState(loadLocal('recentlyPlayed', []));
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
@@ -48,6 +49,18 @@ export default function App() {
       setFavorites([station, ...favorites])
     }
   }
+
+  // Add to recently played when a new station is selected
+  useEffect(() => {
+    if (selected && selected.stationuuid) {
+      setRecentlyPlayed(prev => {
+        const filtered = prev.filter(s => s.stationuuid !== selected.stationuuid);
+        const next = [selected, ...filtered].slice(0, 10);
+        saveLocal('recentlyPlayed', next);
+        return next;
+      });
+    }
+  }, [selected]);
 
   return (
     <div className="min-h-screen p-4 md:p-8 transition-colors relative">
@@ -92,11 +105,12 @@ export default function App() {
               setVisBg={setVisBg}
               setAnalyserRef={setAnalyserRef}
               setAudioCtxFromApp={setAudioCtx}
+              recentlyPlayed={recentlyPlayed}
             />
             {!visBg && (
               <Visualization analyser={analyserRef} audioCtx={audioCtx} visBg={visBg} setVisBg={setVisBg} />
             )}
-            <div className="mt-4 text-sm text-gray-400">Favorites: {favorites.length}</div>
+
           </aside>
         </div>
       </div>
