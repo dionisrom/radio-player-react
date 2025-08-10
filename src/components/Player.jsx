@@ -88,7 +88,7 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
 
     // --- OPTIMIZED CLEANUP AND AUDIO GRAPH SETUP ---
     (async () => {
-      // Cleanup previous audio graph and context
+      // --- CLEANUP PREVIOUS AUDIO GRAPH ---
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.removeAttribute('src');
@@ -99,23 +99,30 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
         try { sourceRef.current.disconnect(); } catch (err) {}
         sourceRef.current = null;
       }
+      if (filtersRef.current && filtersRef.current.length) {
+        filtersRef.current.forEach(f => { try { f.disconnect(); } catch {} });
+        filtersRef.current = [];
+      }
+      if (analyserRef.current) {
+        try { analyserRef.current.disconnect(); } catch {}
+        analyserRef.current = null;
+      }
       if (setAnalyserRef) setAnalyserRef(null);
       if (audioCtx && audioCtx.state !== 'closed') {
         try { await audioCtx.close(); } catch {}
         setAudioCtx(null);
       }
 
+      // --- CREATE NEW AUDIO GRAPH ---
       try {
-        // Create a new AudioContext
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         setAudioCtx(ctx);
         if (setAudioCtxFromApp) setAudioCtxFromApp(ctx);
 
-        // Set the new stream URL
         audioRef.current.src = useProxy ? `/api/proxy?url=${encodeURIComponent(url)}` : url;
         audioRef.current.crossOrigin = "anonymous";
 
-        // Create a new MediaElementSourceNode
+        // Only create one MediaElementSourceNode per audio element
         const source = ctx.createMediaElementSource(audioRef.current);
         sourceRef.current = source;
 
@@ -127,6 +134,7 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
           filter.gain.value = 0;
           return filter;
         });
+        filtersRef.current = filters;
 
         let prev = source;
         filters.forEach((filter) => { prev.connect(filter); prev = filter; });
@@ -134,15 +142,13 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
         const analyser = ctx.createAnalyser();
         analyser.fftSize = 2048;
         prev.connect(analyser);
-        analyserRef.current = analyser;
-        if (setAnalyserRef) setAnalyserRef(analyserRef);
+  analyserRef.current = analyser;
+  if (setAnalyserRef) setAnalyserRef({ current: analyser });
 
         const masterGain = ctx.createGain();
         masterGain.gain.value = 1;
         analyser.connect(masterGain);
         masterGain.connect(ctx.destination);
-
-        filtersRef.current = filters;
 
         // Apply existing EQ gains
         gains.forEach((gain, index) => {
@@ -188,6 +194,14 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
       if (sourceRef.current) {
         try { sourceRef.current.disconnect(); } catch (err) {}
         sourceRef.current = null;
+      }
+      if (filtersRef.current && filtersRef.current.length) {
+        filtersRef.current.forEach(f => { try { f.disconnect(); } catch {} });
+        filtersRef.current = [];
+      }
+      if (analyserRef.current) {
+        try { analyserRef.current.disconnect(); } catch {}
+        analyserRef.current = null;
       }
       if (setAnalyserRef) setAnalyserRef(null);
       if (audioCtx && audioCtx.state !== 'closed') {
