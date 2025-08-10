@@ -92,12 +92,11 @@ export default function App() {
               setVisBg={setVisBg}
               setAnalyserRef={setAnalyserRef}
               setAudioCtxFromApp={setAudioCtx}
-              favorites={favorites}
             />
             {!visBg && (
               <Visualization analyser={analyserRef} audioCtx={audioCtx} visBg={visBg} setVisBg={setVisBg} />
             )}
-
+            <div className="mt-4 text-sm text-gray-400">Favorites: {favorites.length}</div>
           </aside>
         </div>
       </div>

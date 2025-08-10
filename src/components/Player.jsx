@@ -86,24 +86,30 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
     const url = station.url_resolved || station.url;
     let didCancel = false;
 
+    // --- OPTIMIZED CLEANUP AND AUDIO GRAPH SETUP ---
     (async () => {
+      // Cleanup previous audio graph and context
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.removeAttribute('src');
+        audioRef.current.load();
+        audioRef.current.oncanplay = null;
+      }
+      if (sourceRef.current) {
+        try { sourceRef.current.disconnect(); } catch (err) {}
+        sourceRef.current = null;
+      }
+      if (setAnalyserRef) setAnalyserRef(null);
+      if (audioCtx && audioCtx.state !== 'closed') {
+        try { await audioCtx.close(); } catch {}
+        setAudioCtx(null);
+      }
+
       try {
-        // Disconnect and clean up the previous MediaElementSourceNode if it exists
-        if (sourceRef.current) {
-          try { sourceRef.current.disconnect(); } catch (err) {}
-          sourceRef.current = null;
-        }
-
-        // Close the existing AudioContext if it exists and is not already closed
-        if (audioCtx && audioCtx.state !== 'closed') {
-          await audioCtx.close();
-          setAudioCtx(null);
-        }
-
-  // Create a new AudioContext
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  setAudioCtx(ctx);
-  if (setAudioCtxFromApp) setAudioCtxFromApp(ctx);
+        // Create a new AudioContext
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        setAudioCtx(ctx);
+        if (setAudioCtxFromApp) setAudioCtxFromApp(ctx);
 
         // Set the new stream URL
         audioRef.current.src = useProxy ? `/api/proxy?url=${encodeURIComponent(url)}` : url;
@@ -173,7 +179,12 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
     // Cleanup
     return () => {
       didCancel = true;
-      if (audioRef.current) audioRef.current.oncanplay = null;
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.removeAttribute('src');
+        audioRef.current.load();
+        audioRef.current.oncanplay = null;
+      }
       if (sourceRef.current) {
         try { sourceRef.current.disconnect(); } catch (err) {}
         sourceRef.current = null;
