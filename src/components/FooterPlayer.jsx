@@ -1,12 +1,19 @@
 import React, { useEffect, useState, useRef } from 'react'
 
-export default function FooterPlayer({ station, isFavorite, playerControls = null, toggleFavorite, playerPlaying = null, nowPlaying = '' }) {
+export default function FooterPlayer({ station, isFavorite, playerControls = null, toggleFavorite, playerPlaying = null, nowPlaying = '', longPressMs = 450 }) {
   const [volume, setVolumeState] = useState(0.8);
   const [muted, setMutedState] = useState(false);
   const [playing, setPlayingState] = useState(false);
+  const [showVolumePopover, setShowVolumePopover] = useState(false);
+  const [longPressActive, setLongPressActive] = useState(false);
   const playingTimer = useRef(null);
   const [pulse, setPulse] = useState(false);
   const pulseTimer = useRef(null);
+  const popoverRef = useRef(null);
+  const volumeButtonRef = useRef(null);
+  const longPressTimer = useRef(null);
+  const longPressTriggered = useRef(false);
+  const LONG_PRESS_MS = typeof longPressMs === 'number' ? longPressMs : 450;
 
   // Sync initial values when playerControls become available
   useEffect(() => {
@@ -50,6 +57,27 @@ export default function FooterPlayer({ station, isFavorite, playerControls = nul
     }
   };
 
+  // Close popover on outside click or Escape
+  useEffect(() => {
+    if (!showVolumePopover) return;
+    function onDocClick(e) {
+      if (popoverRef.current && !popoverRef.current.contains(e.target) && volumeButtonRef.current && !volumeButtonRef.current.contains(e.target)) {
+        setShowVolumePopover(false);
+      }
+    }
+    function onEsc(e) {
+      if (e.key === 'Escape') setShowVolumePopover(false);
+    }
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('touchstart', onDocClick);
+    document.addEventListener('keydown', onEsc);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('touchstart', onDocClick);
+      document.removeEventListener('keydown', onEsc);
+    };
+  }, [showVolumePopover]);
+
   useEffect(() => {
     return () => {
       if (pulseTimer.current) clearTimeout(pulseTimer.current);
@@ -92,10 +120,10 @@ export default function FooterPlayer({ station, isFavorite, playerControls = nul
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-white/20 dark:border-black/20 backdrop-blur-md py-2 px-4">
       <div className="max-w-6xl mx-auto flex items-center gap-4">
-        <div className="flex items-center gap-3 flex-1">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className={`w-12 h-12 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-md flex items-center justify-center text-white font-bold text-sm transform transition-all duration-300 ${pulse ? 'scale-105 ring-4 ring-blue-400/40 shadow-lg' : ''}`}>FM</div>
-          <div className="truncate">
-            <div className="font-medium text-sm">{station ? station.name : 'No station selected'}</div>
+          <div className="truncate min-w-0">
+            <div className="font-medium text-sm truncate">{station ? station.name : 'No station selected'}</div>
               {nowPlaying ? (
                 <div className="text-xs text-gray-200 truncate">{nowPlaying}</div>
               ) : (
@@ -103,9 +131,9 @@ export default function FooterPlayer({ station, isFavorite, playerControls = nul
               )}
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <button onClick={handleTogglePlay} className="px-3 py-1 rounded glass" aria-label={playing ? 'Pause' : 'Play'} title={playing ? 'Pause' : 'Play'} aria-pressed={playing}>
+            <button onClick={handleTogglePlay} className="p-2 sm:px-3 sm:py-1 rounded glass" aria-label={playing ? 'Pause' : 'Play'} title={playing ? 'Pause' : 'Play'} aria-pressed={playing}>
               {playing ? (
                 <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                   <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
@@ -116,19 +144,53 @@ export default function FooterPlayer({ station, isFavorite, playerControls = nul
                 </svg>
               )}
             </button>
-            <button onClick={handleStop} className="px-3 py-1 rounded bg-red-600 text-white" aria-label="Stop" title="Stop">
+            <button onClick={handleStop} className="p-2 sm:px-3 sm:py-1 rounded bg-red-600 text-white" aria-label="Stop" title="Stop">
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <path d="M6 6h12v12H6z" />
               </svg>
             </button>
           </div>
           <div className="flex items-center gap-3">
-            <input type="range" min="0" max="1" step="0.01" value={volume} onChange={e => handleSetVolume(Number(e.target.value))} className="w-36 accent-blue-500" />
+            {/* Combined button: short tap toggles mute, long-press opens volume popover (mobile) */}
             <button
-              onClick={() => handleSetMuted(!muted)}
-              className="px-2 py-1 rounded glass"
-              aria-label={muted ? 'Unmute' : 'Mute'}
-              title={muted ? 'Unmute' : 'Mute'}
+              ref={volumeButtonRef}
+              onPointerDown={(e) => {
+                // start long-press detection and visual indicator
+                longPressTriggered.current = false;
+                setLongPressActive(true);
+                if (longPressTimer.current) clearTimeout(longPressTimer.current);
+                longPressTimer.current = setTimeout(() => {
+                  longPressTriggered.current = true;
+                  setShowVolumePopover(true);
+                  // short haptic feedback when long-press activates (if available)
+                  if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10);
+                }, LONG_PRESS_MS);
+              }}
+              onPointerUp={(e) => {
+                // short tap (if long-press didn't trigger) toggles mute
+                if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
+                // stop visual indicator
+                setLongPressActive(false);
+                if (longPressTriggered.current) {
+                  // long press already handled (opened popover), reset flag
+                  longPressTriggered.current = false;
+                  return;
+                }
+                handleSetMuted(!muted);
+              }}
+              onPointerCancel={() => {
+                if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
+                longPressTriggered.current = false;
+                setLongPressActive(false);
+              }}
+              onPointerLeave={() => {
+                // cancel if pointer moves away
+                if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
+                setLongPressActive(false);
+              }}
+              className="p-2 rounded glass flex-shrink-0"
+              aria-label={muted ? 'Unmute' : 'Mute / Hold for volume'}
+              title={muted ? 'Unmute' : 'Mute / Hold for volume'}
               aria-pressed={muted}
             >
               {muted ? (
@@ -144,8 +206,64 @@ export default function FooterPlayer({ station, isFavorite, playerControls = nul
                   <path d="M16.5 12c0-1.77-.77-3.36-2-4.47v8.94c1.23-1.11 2-2.7 2-4.47z" />
                 </svg>
               )}
+              {/* visual long-press progress indicator (fills from bottom to top) */}
+              <span aria-hidden className="absolute inset-0 flex items-end justify-center pointer-events-none">
+                <span
+                  className="bg-white/25 dark:bg-white/10 rounded-full w-10"
+                  style={{
+                    height: longPressActive ? '100%' : '0%',
+                    transition: `height ${LONG_PRESS_MS}ms linear`,
+                    transformOrigin: 'bottom'
+                  }}
+                />
+              </span>
             </button>
-            <button onClick={handleToggleFav} className={`px-3 py-1 rounded ${isFavorite ? 'bg-yellow-400 text-black' : 'glass'}`} aria-label={isFavorite ? 'Unfavorite' : 'Favorite'} title={isFavorite ? 'Unfavorite' : 'Favorite'} aria-pressed={isFavorite}>
+            {/* Desktop: inline horizontal slider; Mobile: popover trigger */}
+            <div className="hidden sm:flex items-center">
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={volume}
+                onChange={e => handleSetVolume(Number(e.target.value))}
+                aria-label="Adjust volume"
+                title="Adjust volume"
+                className="w-36 lg:w-40 accent-blue-500"
+              />
+            </div>
+
+            {/* Mobile popover is handled by the same combined button; popover markup (positioned relative to the button) */}
+            <div className="sm:hidden relative">
+              {showVolumePopover && (
+                <div id="volume-popover" ref={popoverRef} role="dialog" aria-label="Volume" className="absolute bottom-12 right-0 z-50 p-1 bg-white/90 dark:bg-gray-800/90 rounded-md shadow-lg backdrop-blur-md border border-white/20 w-14">
+                  {/* small diamond arrow pointing to the trigger */}
+                  <div className="absolute -top-2 right-3 w-3 h-3 transform rotate-45 bg-white/90 dark:bg-gray-800/90 border border-white/20" aria-hidden />
+                  <div className="flex items-center justify-center py-1">
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={volume}
+                      onChange={e => handleSetVolume(Number(e.target.value))}
+                      aria-label="Adjust volume"
+                      title="Adjust volume"
+                      className="accent-blue-500"
+                      style={{
+                        WebkitAppearance: 'slider-vertical',
+                        width: '8px',
+                        height: '110px',
+                        writingMode: 'bt-lr',
+                        display: 'block',
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button onClick={handleToggleFav} className={`p-2 sm:px-3 sm:py-1 rounded ${isFavorite ? 'bg-yellow-400 text-black' : 'glass'}`} aria-label={isFavorite ? 'Unfavorite' : 'Favorite'} title={isFavorite ? 'Unfavorite' : 'Favorite'} aria-pressed={isFavorite}>
               {isFavorite ? (
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                   <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />

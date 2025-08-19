@@ -6,6 +6,36 @@ import Hls from 'hls.js';
 const MAX_BIQUAD_FREQ = 24000;
 const EQ_FREQS = [5, 11, 25, 56, 125, 280, 626, 1399, 3129, 6998, 15650, 35000].map(f => Math.min(f, MAX_BIQUAD_FREQ));
 
+// Normalize a stream/title string into a consistent "Artist — Title" display when possible
+function formatStreamTitle(raw) {
+  try {
+    if (!raw) return '';
+    let s = String(raw).replace(/\u0000/g, '').replace(/\s+/g, ' ').trim();
+    if (!s) return '';
+
+    // Common separators used by streams: ' - ', ' — ', ' – ', ' | ', ' / ' etc.
+    const seps = [' - ', ' — ', ' – ', ' | ', ' / ', '\\u2014', '\\u2013'];
+    for (const sep of seps) {
+      if (s.indexOf(sep) >= 0) {
+        const parts = s.split(sep).map(p => p.trim()).filter(Boolean);
+        if (parts.length >= 2) {
+          // Assume parts[0] = artist, parts[1] = title (common convention). If reversed it will still be informative.
+          return `${parts[0]} — ${parts.slice(1).join(` ${sep.trim()} `)}`;
+        }
+      }
+    }
+
+    // Try simple regex like "Artist: Title" or "Title - Artist" patterns
+    const colonMatch = s.match(/^([^:]+):\s*(.+)$/);
+    if (colonMatch) return `${colonMatch[1].trim()} — ${colonMatch[2].trim()}`;
+
+    // If no clear separator, return original trimmed string
+    return s;
+  } catch (e) {
+    return String(raw || '').trim();
+  }
+}
+
 function loadLocal(key, fallback) {
   try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : fallback } catch { return fallback }
 }
@@ -64,6 +94,22 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
     audioRef.current.volume = volume;
     saveLocal('player_volume', volume);
   }, [volume]);
+
+  // Keep Player state in sync if the underlying audio element dispatches volumechange
+  // (this can happen if other code manipulates the element directly). We cannot
+  // detect or control OS-level hardware volume from the browser; this keeps the
+  // in-app UI synchronized with the HTMLMediaElement volume property.
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    const onVolumeChange = () => {
+      const v = typeof el.volume === 'number' ? el.volume : 0;
+      // Only update if different to avoid unnecessary re-renders
+      setVolume(prev => (Math.abs(prev - v) > 0.0005 ? v : prev));
+    };
+    el.addEventListener('volumechange', onVolumeChange);
+    return () => el.removeEventListener('volumechange', onVolumeChange);
+  }, [audioRef.current]);
 
   useEffect(() => {
     if (!audioRef.current) return;
@@ -169,6 +215,13 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
               await audioRef.current.play();
               setPlaying(true);
               if (setPlayingOnApp) setPlayingOnApp(true);
+              // If the stream doesn't provide metadata immediately, show the station name
+              try {
+                if (setNowPlaying) {
+                  // Only set fallback if there's no existing nowPlaying text
+                  setNowPlaying(prev => (prev && prev.length > 0) ? prev : (station && (station.name || station.title || station.stationuuid) ? (station.name || station.title || station.stationuuid) : ''));
+                }
+              } catch (e) {}
           } catch (err) {
             setPlaying(false);
             if (setPlayingOnApp) setPlayingOnApp(false);
@@ -260,19 +313,22 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
                           const title = (tag.tags && (tag.tags.title || tag.tags.TIT2)) || '';
                           const artist = (tag.tags && (tag.tags.artist || tag.tags.TPE1)) || '';
                           const display = artist && title ? `${artist} — ${title}` : (title || artist || '');
-                          if (display && setNowPlaying) setNowPlaying(display);
+                          const formatted = formatStreamTitle(display);
+                          if (formatted && setNowPlaying) setNowPlaying(formatted);
                         },
                         onError: function(err) {
                           try {
                             const str = new TextDecoder('utf-8').decode(sample.data);
-                            if (setNowPlaying) setNowPlaying(str.replace(/\0+/g, '').trim());
+                            const formatted = formatStreamTitle(str);
+                            if (setNowPlaying) setNowPlaying(formatted);
                           } catch (e) {}
                         }
                       });
                     } else {
                       try {
                         const str = new TextDecoder('utf-8').decode(sample.data);
-                        if (setNowPlaying) setNowPlaying(str.replace(/\0+/g, '').trim());
+                        const formatted = formatStreamTitle(str);
+                        if (setNowPlaying) setNowPlaying(formatted);
                       } catch (e) {}
                     }
                   }).catch(err => {
@@ -306,7 +362,8 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
         try {
           const payload = JSON.parse(e.data);
           const streamTitle = payload.streamTitle || '';
-          if (setNowPlaying) setNowPlaying(streamTitle);
+          const formatted = formatStreamTitle(streamTitle);
+          if (setNowPlaying) setNowPlaying(formatted);
         } catch (err) {}
       });
       es.addEventListener('nometadata', () => {
@@ -381,6 +438,12 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
       await audioRef.current.play();
   setPlaying(true);
   if (setPlayingOnApp) setPlayingOnApp(true);
+      // Fallback nowPlaying when play invoked programmatically
+      try {
+        if (setNowPlaying) {
+          setNowPlaying(prev => (prev && prev.length > 0) ? prev : (station && (station.name || station.title || station.stationuuid) ? (station.name || station.title || station.stationuuid) : ''));
+        }
+      } catch (e) {}
       return true;
     } catch (err) {
       // Better error messages for common cases
@@ -415,11 +478,20 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
   // InvalidStateError). Incrementing audioKey replaces the element.
   setAudioKey(k => k + 1);
     // cleanup audio graph
-    if (sourceRef.current) { try { sourceRef.current.disconnect(); } catch {} sourceRef.current = null }
-    if (filtersRef.current && filtersRef.current.length) { filtersRef.current.forEach(f => { try { f.disconnect(); } catch {} }); filtersRef.current = [] }
-    if (analyserRef.current) { try { analyserRef.current.disconnect(); } catch {} analyserRef.current = null }
-    if (setAnalyserRef) setAnalyserRef(null);
-    if (audioCtx && audioCtx.state !== 'closed') { audioCtx.close().catch(() => {}); setAudioCtx(null) }
+  // close any metadata connections (SSE or HLS) so they don't set state after stop
+  if (metaEsRef.current) { try { metaEsRef.current.close(); } catch {} metaEsRef.current = null }
+  if (hlsRef.current) { try { hlsRef.current.destroy(); } catch {} hlsRef.current = null }
+  // clear now playing metadata
+  if (setNowPlaying) setNowPlaying('');
+  // disconnect audio nodes
+  if (sourceRef.current) { try { sourceRef.current.disconnect(); } catch {} sourceRef.current = null }
+  if (filtersRef.current && filtersRef.current.length) { filtersRef.current.forEach(f => { try { f.disconnect(); } catch {} }); filtersRef.current = [] }
+  if (analyserRef.current) { try { analyserRef.current.disconnect(); } catch {} analyserRef.current = null }
+  if (setAnalyserRef) setAnalyserRef(null);
+  if (audioCtx && audioCtx.state !== 'closed') { audioCtx.close().catch(() => {}); setAudioCtx(null) }
+
+  // Inform parent to clear selected station so Player won't re-initialize
+  try { if (onClose) onClose(); } catch (e) {}
   };
   const handlePause = () => {
     if (!audioRef.current) return;

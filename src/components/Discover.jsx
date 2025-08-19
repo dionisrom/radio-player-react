@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { fetchStations } from '../utils/radiobrowser';
 import StationCard from './StationCard';
+import StationCardCarousel from './StationCardCarousel';
 import { motion } from 'framer-motion';
 
 export default function Discover({ onSelectStation, favorites, toggleFavorite }) {
@@ -37,7 +38,7 @@ export default function Discover({ onSelectStation, favorites, toggleFavorite })
       ) : stations.length ? (
         <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 dark:scrollbar-thumb-gray-700 dark:scrollbar-track-gray-900">
           {stations.map((station) => (
-            <StationCard
+            <StationCardCarousel
               key={station.stationuuid}
               station={station}
               onPlay={() => onSelectStation(station)}

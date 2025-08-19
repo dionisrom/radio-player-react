@@ -30,7 +30,7 @@ export default function App() {
   const [selected, setSelected] = useState(null)
   const [favorites, setFavorites] = useState(loadLocal('favorites', []))
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false)
-  const [visBg, setVisBg] = useState(false) // visualization as background toggle
+  const [visBg, setVisBg] = useState(loadLocal('visBg', true)) // visualization as background toggle (default ON)
   const [analyserRef, setAnalyserRef] = useState(null)
   const [audioCtx, setAudioCtx] = useState(null)
   const [recentlyPlayed, setRecentlyPlayed] = useState(loadLocal('recentlyPlayed', []));
@@ -47,6 +47,8 @@ export default function App() {
   }, [theme])
 
   useEffect(() => saveLocal('favorites', favorites), [favorites])
+
+  useEffect(() => saveLocal('visBg', visBg), [visBg])
 
   const toggleFavorite = (station) => {
     const exists = favorites.find((s) => s.stationuuid === station.stationuuid)
@@ -68,6 +70,30 @@ export default function App() {
       });
     }
   }, [selected]);
+
+  // Select a station: fully stop/clear existing player first to avoid re-init/restart races
+  const handleSelectStation = (station) => {
+    if (!station) {
+      setSelected(null);
+      return;
+    }
+    // If same station, do nothing
+    if (selected && station.stationuuid === selected.stationuuid) return;
+
+    // If we have controls exposed, stop the player which will also close metadata/HLS
+    try {
+      if (playerControls && typeof playerControls.stop === 'function') {
+        playerControls.stop();
+      }
+    } catch (e) {
+      console.warn('Error stopping existing player before selecting new station', e);
+    }
+
+    // Clear UI metadata and selected quickly, then set new station after a short delay to allow cleanup
+    try { setNowPlaying(''); } catch (e) {}
+    setSelected(null);
+    setTimeout(() => setSelected(station), 120);
+  };
 
   // Export favorites as JSON file
   function exportFavorites() {
@@ -119,27 +145,27 @@ export default function App() {
       )}
 
       <div className="w-full max-w-none mx-auto relative z-10">
-        {/* Export/Import Favorites Controls */}
-        <div className="flex gap-2 mb-4">
-          <button onClick={exportFavorites} className="px-3 py-1 rounded bg-blue-600 text-white text-xs font-semibold shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition">Export Favorites</button>
-          <label className="px-3 py-1 rounded bg-green-600 text-white text-xs font-semibold shadow hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 transition cursor-pointer">
-            Import Favorites
-            <input type="file" accept="application/json" onChange={importFavorites} style={{ display: 'none' }} />
-          </label>
-        </div>
-  <Header theme={theme} setTheme={setTheme} visBg={visBg} setVisBg={setVisBg} nowPlaying={nowPlaying} />
+  <Header
+          theme={theme}
+          setTheme={setTheme}
+          visBg={visBg}
+          setVisBg={setVisBg}
+          nowPlaying={nowPlaying}
+          exportFavorites={exportFavorites}
+          importFavorites={importFavorites}
+        />
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr,420px] gap-6">
           <main
             className={`space-y-4 rounded-2xl p-2 md:p-16 pb-16 transition-all ${visBg ? 'backdrop-blur-lg bg-white/30 dark:bg-black/30 border border-white/20 dark:border-black/20 shadow-xl' : ''}`}
           >
             <TopCarousel
               favorites={favorites}
-              onSelectStation={setSelected}
+              onSelectStation={handleSelectStation}
               toggleFavorite={toggleFavorite}
               component={Discover}
             />
             <StationList
-              onSelectStation={setSelected}
+              onSelectStation={handleSelectStation}
               favorites={favorites}
               toggleFavorite={toggleFavorite}
               showOnlyFavorites={showOnlyFavorites}
