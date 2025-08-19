@@ -62,6 +62,44 @@ export default function App() {
     }
   }, [selected]);
 
+  // Export favorites as JSON file
+  function exportFavorites() {
+    const dataStr = JSON.stringify(favorites, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'radio-favorites.json';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+  }
+
+  // Import favorites from JSON file
+  function importFavorites(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const imported = JSON.parse(evt.target.result);
+        if (Array.isArray(imported) && imported.every(s => s.stationuuid)) {
+          setFavorites(imported);
+        } else {
+          alert('Invalid favorites file.');
+        }
+      } catch {
+        alert('Could not parse favorites file.');
+      }
+    };
+    reader.readAsText(file);
+    // Reset input value so same file can be re-imported
+    e.target.value = '';
+  }
+
   return (
     <div className="min-h-screen p-4 md:p-8 transition-colors relative">
 
@@ -74,6 +112,14 @@ export default function App() {
       )}
 
       <div className="w-full max-w-none mx-auto relative z-10">
+        {/* Export/Import Favorites Controls */}
+        <div className="flex gap-2 mb-4">
+          <button onClick={exportFavorites} className="px-3 py-1 rounded bg-blue-600 text-white text-xs font-semibold shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition">Export Favorites</button>
+          <label className="px-3 py-1 rounded bg-green-600 text-white text-xs font-semibold shadow hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 transition cursor-pointer">
+            Import Favorites
+            <input type="file" accept="application/json" onChange={importFavorites} style={{ display: 'none' }} />
+          </label>
+        </div>
   <Header theme={theme} setTheme={setTheme} visBg={visBg} setVisBg={setVisBg} />
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr,420px] gap-6">
           <main
