@@ -105,7 +105,7 @@ const selectStyles = {
   }),
 };
 
-export default function StationList({ onSelectStation, favorites, toggleFavorite, showOnlyFavorites, setShowOnlyFavorites }) {
+export default function StationList({ onSelectStation, favorites, toggleFavorite, showOnlyFavorites, setShowOnlyFavorites, nowPlaying = '' }) {
   const [page, setPage] = useState(1)
   const [perPage] = useState(12)
   const [stations, setStations] = useState([])
@@ -123,15 +123,28 @@ export default function StationList({ onSelectStation, favorites, toggleFavorite
 
   // Fetch initial country and tag options on mount (for empty input)
   useEffect(() => {
-    fetchCountries().then(countries => {
-      setCountryOptions((countries || []).map(c => ({ value: c.name, label: c.name })));
-    });
-    fetchTags().then(tags => {
-      setTagOptions((tags || []).map(t => ({ value: t.name, label: t.name })));
-    });
-    fetchCodecs().then(codecs => {
-      setCodecOptions((codecs || []).map(c => ({ value: c.name, label: c.name })));
-    });
+    let isMounted = true;
+    (async () => {
+      try {
+        const countries = await fetchCountries();
+        if (isMounted) setCountryOptions((countries || []).map(c => ({ value: c.name, label: c.name })));
+      } catch (err) {
+        if (isMounted) setCountryOptions([]);
+      }
+      try {
+        const tags = await fetchTags();
+        if (isMounted) setTagOptions((tags || []).map(t => ({ value: t.name, label: t.name })));
+      } catch (err) {
+        if (isMounted) setTagOptions([]);
+      }
+      try {
+        const codecs = await fetchCodecs();
+        if (isMounted) setCodecOptions((codecs || []).map(c => ({ value: c.name, label: c.name })));
+      } catch (err) {
+        if (isMounted) setCodecOptions([]);
+      }
+    })();
+    return () => { isMounted = false };
   }, []);
 
   // Async load options for react-select (countries)
@@ -307,6 +320,7 @@ export default function StationList({ onSelectStation, favorites, toggleFavorite
               }}
               isFav={!!stableFavorites.find(f => f.stationuuid === st.stationuuid)}
               onToggleFav={() => toggleFavorite(st)}
+              nowPlaying={nowPlaying}
             />
           )) : <div className="p-6 rounded-lg shadow-lg bg-gray-200 dark:bg-gray-700">No stations</div>
         }

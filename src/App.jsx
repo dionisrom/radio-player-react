@@ -6,6 +6,7 @@ import Player from './components/Player'
 import TopCarousel from './components/TopCarousel'
 import Discover from './components/Discover'
 import Visualization from './components/Visualization'
+import FooterPlayer from './components/FooterPlayer'
 
 
 // ...existing code...
@@ -33,6 +34,12 @@ export default function App() {
   const [analyserRef, setAnalyserRef] = useState(null)
   const [audioCtx, setAudioCtx] = useState(null)
   const [recentlyPlayed, setRecentlyPlayed] = useState(loadLocal('recentlyPlayed', []));
+  const [playerControls, setPlayerControls] = useState(null);
+  const [playerPlaying, setPlayerPlaying] = useState(false);
+  const [nowPlaying, setNowPlaying] = useState('');
+  const registerControls = React.useCallback((controls) => {
+    setPlayerControls(prev => prev === controls ? prev : controls);
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
@@ -120,10 +127,10 @@ export default function App() {
             <input type="file" accept="application/json" onChange={importFavorites} style={{ display: 'none' }} />
           </label>
         </div>
-  <Header theme={theme} setTheme={setTheme} visBg={visBg} setVisBg={setVisBg} />
+  <Header theme={theme} setTheme={setTheme} visBg={visBg} setVisBg={setVisBg} nowPlaying={nowPlaying} />
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr,420px] gap-6">
           <main
-            className={`space-y-4 rounded-2xl p-2 md:p-4 transition-all ${visBg ? 'backdrop-blur-lg bg-white/30 dark:bg-black/30 border border-white/20 dark:border-black/20 shadow-xl' : ''}`}
+            className={`space-y-4 rounded-2xl p-2 md:p-16 pb-16 transition-all ${visBg ? 'backdrop-blur-lg bg-white/30 dark:bg-black/30 border border-white/20 dark:border-black/20 shadow-xl' : ''}`}
           >
             <TopCarousel
               favorites={favorites}
@@ -137,6 +144,7 @@ export default function App() {
               toggleFavorite={toggleFavorite}
               showOnlyFavorites={showOnlyFavorites}
               setShowOnlyFavorites={setShowOnlyFavorites}
+              nowPlaying={nowPlaying}
             />
           </main>
 
@@ -152,6 +160,9 @@ export default function App() {
               setAnalyserRef={setAnalyserRef}
               setAudioCtxFromApp={setAudioCtx}
               recentlyPlayed={recentlyPlayed}
+              registerControls={registerControls}
+              setPlayingOnApp={setPlayerPlaying}
+              setNowPlaying={setNowPlaying}
             />
             {!visBg && (
               <Visualization analyser={analyserRef} audioCtx={audioCtx} visBg={visBg} setVisBg={setVisBg} />
@@ -159,6 +170,16 @@ export default function App() {
 
           </aside>
         </div>
+
+        {/* Persistent footer player (always rendered) */}
+        <FooterPlayer
+          station={selected}
+          isFavorite={!!(selected && favorites.find(s => s.stationuuid === selected.stationuuid))}
+          playerControls={playerControls}
+          playerPlaying={playerPlaying}
+          toggleFavorite={toggleFavorite}
+          nowPlaying={nowPlaying}
+        />
       </div>
     </div>
   )

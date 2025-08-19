@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import EQ from './EQ';
 import { PRESETS as BASE_PRESETS } from '../utils/presets';
+import Hls from 'hls.js';
 
 const MAX_BIQUAD_FREQ = 24000;
 const EQ_FREQS = [5, 11, 25, 56, 125, 280, 626, 1399, 3129, 6998, 15650, 35000].map(f => Math.min(f, MAX_BIQUAD_FREQ));
@@ -22,7 +23,7 @@ function getPresets() {
   return { ...BASE_PRESETS };
 }
 
-export default function Player({ station, onClose, toggleFavorite, isFavorite, setVisBg, setAnalyserRef, setAudioCtxFromApp, recentlyPlayed = [] }) {
+export default function Player({ station, onClose, toggleFavorite, isFavorite, setVisBg, setAnalyserRef, setAudioCtxFromApp, recentlyPlayed = [], registerControls = null, setPlayingOnApp = null, setNowPlaying = null }) {
   const audioRef = useRef(null);
   const [audioCtx, setAudioCtx] = useState(null);
   const sourceRef = useRef(null);
@@ -37,6 +38,8 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
   const [useProxy, setUseProxy] = useState(loadLocal('use_proxy', false));
   // Only vertical EQ sliders now
   const [audioKey, setAudioKey] = useState(0); // force remount audio element
+  const hlsRef = useRef(null);
+  const metaEsRef = useRef(null);
 
   useEffect(() => saveLocal('eq_gains', gains), [gains]);
   useEffect(() => saveLocal('eq_preset', selectedPreset), [selectedPreset]);
@@ -81,7 +84,7 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
   }, [audioKey]);
 
   useEffect(() => {
-    if (!station || !audioRef.current) return;
+  if (!station || !audioRef.current) return;
 
     const url = station.url_resolved || station.url;
     let didCancel = false;
@@ -114,7 +117,7 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
       }
 
       // --- CREATE NEW AUDIO GRAPH ---
-      try {
+  try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         setAudioCtx(ctx);
         if (setAudioCtxFromApp) setAudioCtxFromApp(ctx);
@@ -156,25 +159,35 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
         });
 
         // Wait for the audio element to be ready, then play
-        audioRef.current.load();
+  audioRef.current.load();
         audioRef.current.oncanplay = async () => {
           if (didCancel) return;
           try {
             if (ctx.state === 'suspended') {
               await ctx.resume();
             }
-            await audioRef.current.play();
-            setPlaying(true);
+              await audioRef.current.play();
+              setPlaying(true);
+              if (setPlayingOnApp) setPlayingOnApp(true);
           } catch (err) {
             setPlaying(false);
-            console.error('Error playing stream:', err);
-            if (err.name === 'NotSupportedError') {
-              alert('The selected stream is not supported by your browser. Please try another station.');
+            if (setPlayingOnApp) setPlayingOnApp(false);
+            if (setNowPlaying) setNowPlaying('');
+            // Autoplay/blocking errors are common on page load. Log as warnings and
+            // don't show alerts to avoid spamming the user.
+            if (err && err.name === 'NotAllowedError') {
+              console.warn('Autoplay blocked by browser policy:', err.message || err);
+            } else if (err && err.name === 'NotSupportedError') {
+              console.warn('The selected stream is not supported by your browser:', err.message || err);
+            } else {
+              console.warn('Error playing stream:', err);
             }
           }
         };
-      } catch (err) {
-        setPlaying(false);
+    } catch (err) {
+  setPlaying(false);
+  if (setPlayingOnApp) setPlayingOnApp(false);
+  if (setNowPlaying) setNowPlaying('');
         console.error('Error initializing audio graph or playing stream:', err);
         if (err.name === 'NotSupportedError') {
           alert('The selected stream is not supported by your browser. Please try another station.');
@@ -210,6 +223,107 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
       }
     };
   }, [audioKey]);
+
+  // Subscribe to ICY metadata (server meta SSE) and HLS ID3 when station changes
+  useEffect(() => {
+    // cleanup prev
+    if (metaEsRef.current) { try { metaEsRef.current.close(); } catch {} metaEsRef.current = null }
+    if (hlsRef.current) { try { hlsRef.current.destroy(); } catch {} hlsRef.current = null }
+
+    const url = station ? (station.url_resolved || station.url) : null;
+    if (!url) return;
+
+    // HLS ID3 handling for .m3u8 streams (client-side via hls.js)
+    if (url.toLowerCase().includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
+      try {
+        const hls = new Hls();
+        hlsRef.current = hls;
+        hls.loadSource(url);
+        hls.attachMedia(audioRef.current);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          // manifest parsed; do not auto-play here — Player handles play
+        });
+        hls.on(Hls.Events.FRAG_PARSING_METADATA, (event, data) => {
+          try {
+            if (!data || !data.samples) return;
+            for (const sample of data.samples) {
+              try {
+                // Convert Uint8Array to Blob for jsmediatags
+                const blob = new Blob([sample.data.buffer || sample.data], { type: 'audio/mpeg' });
+                // Dynamically load jsmediatags UMD build to parse ID3 frames in the browser.
+                try {
+                  import('jsmediatags/dist/jsmediatags.min.js').then((jsmediatags) => {
+                    const reader = jsmediatags && (jsmediatags.default || jsmediatags);
+                    if (reader && reader.read) {
+                      reader.read(blob, {
+                        onSuccess: function(tag) {
+                          const title = (tag.tags && (tag.tags.title || tag.tags.TIT2)) || '';
+                          const artist = (tag.tags && (tag.tags.artist || tag.tags.TPE1)) || '';
+                          const display = artist && title ? `${artist} — ${title}` : (title || artist || '');
+                          if (display && setNowPlaying) setNowPlaying(display);
+                        },
+                        onError: function(err) {
+                          try {
+                            const str = new TextDecoder('utf-8').decode(sample.data);
+                            if (setNowPlaying) setNowPlaying(str.replace(/\0+/g, '').trim());
+                          } catch (e) {}
+                        }
+                      });
+                    } else {
+                      try {
+                        const str = new TextDecoder('utf-8').decode(sample.data);
+                        if (setNowPlaying) setNowPlaying(str.replace(/\0+/g, '').trim());
+                      } catch (e) {}
+                    }
+                  }).catch(err => {
+                    try {
+                      const str = new TextDecoder('utf-8').decode(sample.data);
+                      if (setNowPlaying) setNowPlaying(str.replace(/\0+/g, '').trim());
+                    } catch (e) {}
+                  });
+                } catch (err) {
+                  try {
+                    const str = new TextDecoder('utf-8').decode(sample.data);
+                    if (setNowPlaying) setNowPlaying(str.replace(/\0+/g, '').trim());
+                  } catch (e) {}
+                }
+              } catch (err) {
+                console.warn('Error parsing HLS ID3 sample', err);
+              }
+            }
+          } catch (e) { console.warn('Error parsing HLS ID3 sample', e); }
+        });
+      } catch (err) {
+        console.warn('HLS setup failed', err);
+      }
+    }
+
+    // For non-HLS streams, use server-side ICY metadata via SSE endpoint
+    try {
+      const es = new EventSource(`/api/meta?url=${encodeURIComponent(url)}`);
+      metaEsRef.current = es;
+      es.addEventListener('metadata', (e) => {
+        try {
+          const payload = JSON.parse(e.data);
+          const streamTitle = payload.streamTitle || '';
+          if (setNowPlaying) setNowPlaying(streamTitle);
+        } catch (err) {}
+      });
+      es.addEventListener('nometadata', () => {
+        if (setNowPlaying) setNowPlaying('');
+      });
+      es.onerror = () => { /* ignore, EventSource will reconnect */ };
+    } catch (err) {
+      // ignore
+    }
+
+    return () => {
+      if (metaEsRef.current) { try { metaEsRef.current.close(); } catch {} metaEsRef.current = null }
+      if (hlsRef.current) { try { hlsRef.current.destroy(); } catch {} hlsRef.current = null }
+      // Keep nowPlaying intact across short re-initializations; parent (App) or explicit stop
+      // will clear it when needed. This avoids brief overwrites when playback starts.
+    };
+  }, [station && (station.url_resolved || station.url)]);
 
   const ensureAudioGraph = async () => {
     if (!audioRef.current) return;
@@ -250,23 +364,68 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
 
   const handlePlay = async () => {
     try {
-      if (!audioRef.current) return;
+      if (!audioRef.current) return false;
       await ensureAudioGraph();
-      await audioRef.current.play();
+
+      // ensure audio context resumed first
       if (audioCtx && audioCtx.state === 'suspended') {
-        await audioCtx.resume();
+        try { await audioCtx.resume(); } catch (e) { /* ignore */ }
       }
-      setPlaying(true);
+
+      // final check for src
+      if (!audioRef.current.src) {
+        console.warn('No audio source to play');
+        return false;
+      }
+
+      await audioRef.current.play();
+  setPlaying(true);
+  if (setPlayingOnApp) setPlayingOnApp(true);
+      return true;
     } catch (err) {
-      console.error('Play failed', err);
-      alert('Unable to play stream (codec/CORS or stream unavailable).');
-      setPlaying(false);
+      // Better error messages for common cases
+      if (err && err.name === 'NotAllowedError') {
+        // Autoplay blocked by browser policy
+        console.warn('Playback blocked by browser autoplay policy:', err.message || err);
+        // do not spam console.error; let caller decide what UI to show
+        setPlaying(false);
+        return false;
+      }
+      if (err && err.name === 'NotSupportedError') {
+        console.warn('Stream not supported by this browser:', err.message || err);
+        setPlaying(false);
+        return false;
+      }
+      console.warn('Play failed', err);
+  setPlaying(false);
+  if (setPlayingOnApp) setPlayingOnApp(false);
+      return false;
     }
+  };
+  const handleStop = () => {
+    if (!audioRef.current) return;
+    // Pause and fully reset audio element and audio graph
+    audioRef.current.pause();
+    audioRef.current.removeAttribute('src');
+    audioRef.current.load();
+  setPlaying(false);
+  if (setPlayingOnApp) setPlayingOnApp(false);
+  // Force remount of the audio element so we won't try to create a new
+  // MediaElementSourceNode for the same HTMLMediaElement (which causes
+  // InvalidStateError). Incrementing audioKey replaces the element.
+  setAudioKey(k => k + 1);
+    // cleanup audio graph
+    if (sourceRef.current) { try { sourceRef.current.disconnect(); } catch {} sourceRef.current = null }
+    if (filtersRef.current && filtersRef.current.length) { filtersRef.current.forEach(f => { try { f.disconnect(); } catch {} }); filtersRef.current = [] }
+    if (analyserRef.current) { try { analyserRef.current.disconnect(); } catch {} analyserRef.current = null }
+    if (setAnalyserRef) setAnalyserRef(null);
+    if (audioCtx && audioCtx.state !== 'closed') { audioCtx.close().catch(() => {}); setAudioCtx(null) }
   };
   const handlePause = () => {
     if (!audioRef.current) return;
     audioRef.current.pause();
-    setPlaying(false);
+  setPlaying(false);
+  if (setPlayingOnApp) setPlayingOnApp(false);
   };
 
   const setBandGain = (index, db) => {
@@ -300,43 +459,56 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Expose controls to parent (Footer) if registerControls callback provided
+  // Use refs to expose stable control wrappers to parent. We assign current handlers/values
+  // into refs each render and register a single controls object once (or when registerControls changes).
+  const playRef = useRef(() => {});
+  const pauseRef = useRef(() => {});
+  const stopRef = useRef(() => {});
+  const playingRef = useRef(false);
+  const setVolumeRef = useRef((v) => {});
+  const setMutedRef = useRef((m) => {});
+  const volumeRef = useRef(volume);
+  const mutedRef = useRef(muted);
+
+  // keep refs up to date every render
+  playRef.current = handlePlay;
+  pauseRef.current = handlePause;
+  stopRef.current = handleStop;
+  playingRef.current = playing;
+  setVolumeRef.current = (v) => setVolume(Number(v));
+  setMutedRef.current = (m) => setMuted(Boolean(m));
+  volumeRef.current = volume;
+  mutedRef.current = muted;
+
+  useEffect(() => {
+    if (!registerControls) return;
+    const controls = {
+      play: (...args) => playRef.current && playRef.current(...args),
+      pause: (...args) => pauseRef.current && pauseRef.current(...args),
+      stop: (...args) => stopRef.current && stopRef.current(...args),
+      setVolume: (v) => setVolumeRef.current && setVolumeRef.current(v),
+      setMuted: (m) => setMutedRef.current && setMutedRef.current(m),
+  getPlaying: () => playingRef.current,
+      getVolume: () => volumeRef.current,
+      getMuted: () => mutedRef.current,
+    };
+    registerControls(controls);
+    return () => registerControls(null);
+    // only re-register if the registration callback identity changes
+  }, [registerControls]);
+
 
 
   return (
     <div>
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="font-semibold">{station ? station.name : 'No station selected'}</div>
-          <div className="text-xs text-gray-400">{station ? `${station.country} • ${station.codec} • ${station.bitrate} kbps` : 'Select a station to play'}</div>
-        </div>
-        <div className="flex items-center gap-2">
-          {station && (
-            <>
-              <button onClick={() => toggleFavorite(station)} className={`px-3 py-1 rounded ${isFavorite ? 'bg-yellow-400 text-black' : 'glass'}`}>
-                {isFavorite ? '★' : '☆'}
-              </button>
-              {playing ? (
-                <button onClick={handlePause} className="px-3 py-1 rounded glass">Pause</button>
-              ) : (
-                <button onClick={handlePlay} className="px-3 py-1 rounded glass">Play</button>
-              )}
-            </>
-          )}
-          <button onClick={onClose} className="px-2 py-1 rounded glass">Close</button>
-        </div>
-      </div>
-
+      {/* Primary controls moved to persistent footer; aside shows advanced controls only */}
   {/* Visualization is now handled by App, not Player */}
 
 
       <div className="mt-4">
         <div className="flex flex-col gap-4">
-          {/* Volume and Mute */}
-          <div className="flex items-center gap-3 bg-white/30 dark:bg-black/30 backdrop-blur rounded-lg px-3 py-2">
-            <label className="text-xs font-medium">Volume</label>
-            <input type="range" min="0" max="1" step="0.01" value={volume} onChange={e => setVolume(parseFloat(e.target.value))} className="flex-1 accent-blue-500" />
-            <label className="ml-2 text-xs flex items-center gap-1"><input type="checkbox" checked={muted} onChange={e => setMuted(e.target.checked)} /> Muted</label>
-          </div>
+          {/* Volume and Mute moved to persistent footer */}
 
           {/* EQ Preset, Reset, Proxy, Sliders */}
           <div className="flex flex-col gap-2 bg-white/30 dark:bg-black/30 backdrop-blur rounded-lg px-3 py-2">

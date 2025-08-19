@@ -1,7 +1,7 @@
 import React from 'react'
 import { SunIcon, MoonIcon } from './ThemeIcons'
 
-export default function Header({ theme, setTheme, visBg, setVisBg }) {
+export default function Header({ theme, setTheme, visBg, setVisBg, nowPlaying = '' }) {
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-2 rounded-2xl mb-6 shadow-xl glass backdrop-blur-lg bg-white/30 dark:bg-black/30 border border-white/20 dark:border-black/20">
       <div className="flex items-center gap-3">
@@ -10,7 +10,11 @@ export default function Header({ theme, setTheme, visBg, setVisBg }) {
         </div>
         <div>
           <h1 className="text-xl font-semibold">RadioStream</h1>
-          <p className="text-xs text-gray-400">Discover & play online radio stations</p>
+          {nowPlaying ? (
+            <p className="text-xs text-gray-200">Now playing: {nowPlaying}</p>
+          ) : (
+            <p className="text-xs text-gray-400">Discover & play online radio stations</p>
+          )}
         </div>
       </div>
       <div className="flex flex-row gap-3 items-center">
