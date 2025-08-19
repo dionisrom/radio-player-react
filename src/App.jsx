@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef, useCallback } from 'react'
 import Header from './components/Header'
 import StationList from './components/StationList'
 import Player from './components/Player'
@@ -41,6 +41,12 @@ export default function App() {
     setPlayerControls(prev => prev === controls ? prev : controls);
   }, []);
 
+  // Refs to hold latest mutable values so we can use stable callbacks
+  const playerControlsRef = useRef(playerControls);
+  useEffect(() => { playerControlsRef.current = playerControls; }, [playerControls]);
+  const selectedRef = useRef(selected);
+  useEffect(() => { selectedRef.current = selected; }, [selected]);
+
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
     saveLocal('theme', theme)
@@ -50,14 +56,13 @@ export default function App() {
 
   useEffect(() => saveLocal('visBg', visBg), [visBg])
 
-  const toggleFavorite = (station) => {
-    const exists = favorites.find((s) => s.stationuuid === station.stationuuid)
-    if (exists) {
-      setFavorites(favorites.filter((s) => s.stationuuid !== station.stationuuid))
-    } else {
-      setFavorites([station, ...favorites])
-    }
-  }
+  const toggleFavorite = useCallback((station) => {
+    setFavorites(prev => {
+      const exists = prev.find((s) => s.stationuuid === station.stationuuid);
+      if (exists) return prev.filter((s) => s.stationuuid !== station.stationuuid);
+      return [station, ...prev];
+    });
+  }, []);
 
   // Add to recently played when a new station is selected
   useEffect(() => {
@@ -72,28 +77,26 @@ export default function App() {
   }, [selected]);
 
   // Select a station: fully stop/clear existing player first to avoid re-init/restart races
-  const handleSelectStation = (station) => {
+  const handleSelectStation = useCallback((station) => {
     if (!station) {
       setSelected(null);
       return;
     }
     // If same station, do nothing
-    if (selected && station.stationuuid === selected.stationuuid) return;
+    if (selectedRef.current && station.stationuuid === selectedRef.current.stationuuid) return;
 
-    // If we have controls exposed, stop the player which will also close metadata/HLS
+    // Stop existing player via ref (avoid depending on playerControls identity)
     try {
-      if (playerControls && typeof playerControls.stop === 'function') {
-        playerControls.stop();
-      }
+      const ctrl = playerControlsRef.current;
+      if (ctrl && typeof ctrl.stop === 'function') ctrl.stop();
     } catch (e) {
       console.warn('Error stopping existing player before selecting new station', e);
     }
 
-    // Clear UI metadata and selected quickly, then set new station after a short delay to allow cleanup
+    // Clear UI metadata and set new station immediately; Player does cleanup
     try { setNowPlaying(''); } catch (e) {}
-    setSelected(null);
-    setTimeout(() => setSelected(station), 120);
-  };
+    setSelected(station);
+  }, []);
 
   // Export favorites as JSON file
   function exportFavorites() {
@@ -156,7 +159,7 @@ export default function App() {
         />
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr,420px] gap-6">
           <main
-            className={`space-y-4 rounded-2xl p-2 md:p-16 pb-16 transition-all ${visBg ? 'backdrop-blur-lg bg-white/30 dark:bg-black/30 border border-white/20 dark:border-black/20 shadow-xl' : ''}`}
+            className={`space-y-4 rounded-2xl p-2 md:p-16 pb-16 transition-all min-w-0 ${visBg ? 'backdrop-blur-lg bg-white/30 dark:bg-black/30 border border-white/20 dark:border-black/20 shadow-xl' : ''}`}
           >
             <TopCarousel
               favorites={favorites}

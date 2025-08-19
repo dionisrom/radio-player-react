@@ -109,7 +109,7 @@ function FavoritesCarousel({ favorites, onSelectStation, toggleFavorite }) {
           >&#8594;</button>
         </div>
       </div>
-      <div ref={containerRef} className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 dark:scrollbar-thumb-gray-700 dark:scrollbar-track-gray-900">
+  <div ref={containerRef} className="flex gap-4 overflow-x-auto hide-scrollbar overflow-y-hidden pb-2">
         {favorites.slice(start, end).map(station => (
           <StationCardCarousel
             key={station.stationuuid}
@@ -125,7 +125,7 @@ function FavoritesCarousel({ favorites, onSelectStation, toggleFavorite }) {
 }
 
 
-export default function TopCarousel({ favorites, onSelectStation, toggleFavorite, component }) {
+function TopCarousel({ favorites, onSelectStation, toggleFavorite, component }) {
   const [section, setSection] = useState(favorites.length > 0 ? 'favorites' : 'discover');
 
   useEffect(() => {
@@ -137,19 +137,18 @@ export default function TopCarousel({ favorites, onSelectStation, toggleFavorite
 
   // Discover carousel: mirrors FavoritesCarousel but fetches trending stations
   function DiscoverCarousel({ onSelectStation, favorites, toggleFavorite }) {
-  const [start, setStart] = useState(0);
-  const [perPage, setPerPage] = useState(5);
-  const end = start + perPage;
-  const [stations, setStations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const containerRef = useRef(null);
+    const [start, setStart] = useState(0);
+    const [perPage, setPerPage] = useState(5);
+    const end = start + perPage;
+    const [stations, setStations] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const containerRef = useRef(null);
 
     useEffect(() => {
       let isMounted = true;
       setLoading(true);
       (async () => {
         try {
-          // fetch a modest batch so pagination works client-side
           const results = await fetchStations({ perPage: 20 });
           if (isMounted) setStations(results || []);
         } catch (err) {
@@ -166,7 +165,6 @@ export default function TopCarousel({ favorites, onSelectStation, toggleFavorite
     const canPrev = start > 0;
     const canNext = start < maxStart;
 
-    // recompute perPage based on container width and item width
     useEffect(() => {
       const container = containerRef.current;
       if (!container) return;
@@ -192,7 +190,6 @@ export default function TopCarousel({ favorites, onSelectStation, toggleFavorite
       return () => { ro.disconnect(); window.removeEventListener('resize', recompute); };
     }, [stations.length]);
 
-    // clamp and align start when stations or perPage change
     useEffect(() => {
       const newMax = Math.max(0, stations.length - perPage);
       setStart(s => Math.min(newMax, Math.floor(s / Math.max(1, perPage)) * perPage));
@@ -208,7 +205,6 @@ export default function TopCarousel({ favorites, onSelectStation, toggleFavorite
       } catch (err) {}
     }, [start]);
 
-    // Sync start when user scrolls
     const scrollTimeoutRef2 = useRef(null);
     useEffect(() => {
       const container = containerRef.current;
@@ -233,11 +229,11 @@ export default function TopCarousel({ favorites, onSelectStation, toggleFavorite
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-xl font-bold">Discover</h2>
           <div>
-      <button onClick={() => setStart(s => Math.max(0, s - perPage))} disabled={!canPrev} className="px-2 py-1 mx-1 rounded bg-gray-200 dark:bg-gray-700 disabled:opacity-50">&#8592;</button>
-      <button onClick={() => setStart(s => Math.min(maxStart, s + perPage))} disabled={!canNext} className="px-2 py-1 mx-1 rounded bg-gray-200 dark:bg-gray-700 disabled:opacity-50">&#8594;</button>
+            <button onClick={() => setStart(s => Math.max(0, s - perPage))} disabled={!canPrev} className="px-2 py-1 mx-1 rounded bg-gray-200 dark:bg-gray-700 disabled:opacity-50">&#8592;</button>
+            <button onClick={() => setStart(s => Math.min(maxStart, s + perPage))} disabled={!canNext} className="px-2 py-1 mx-1 rounded bg-gray-200 dark:bg-gray-700 disabled:opacity-50">&#8594;</button>
           </div>
         </div>
-    <div ref={containerRef} className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 dark:scrollbar-thumb-gray-700 dark:scrollbar-track-gray-900">
+        <div ref={containerRef} className="flex gap-4 overflow-x-auto hide-scrollbar overflow-y-hidden pb-2">
           {loading ? (
             <div className="text-gray-500">Loading...</div>
           ) : (
@@ -279,7 +275,7 @@ export default function TopCarousel({ favorites, onSelectStation, toggleFavorite
           Discover
         </button>
       </div>
-  <div className="min-h-[220px] w-full max-w-full overflow-x-hidden">
+      <div className="min-h-[220px] w-full max-w-full overflow-x-hidden">
         {section === 'favorites' && favorites.length > 0 && (
           <div className="w-full">
             <FavoritesCarousel favorites={favorites} onSelectStation={onSelectStation} toggleFavorite={toggleFavorite} />
@@ -294,3 +290,5 @@ export default function TopCarousel({ favorites, onSelectStation, toggleFavorite
     </div>
   );
 }
+
+export default React.memo(TopCarousel);

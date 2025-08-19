@@ -15,6 +15,15 @@ import { motion } from 'framer-motion';
 import Select from 'react-select';
 import AsyncSelect from 'react-select/async';
 
+// Stable variants for the station list container to avoid re-triggering the
+// slide-in animation on every parent re-render (object identity changes
+// caused repeated animates). Use string-based variants which are stable.
+const listVariants = {
+  initial: { opacity: 0, y: 20 },
+  enter: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: 20 }
+};
+
 const selectStyles = {
   control: (base, state) => {
     // Always use the same glass background for the control so selected filters
@@ -57,16 +66,17 @@ const selectStyles = {
     fontSize: '1rem',
     backgroundColor: 'transparent',
   }),
+  // Unified menu style (merged duplicate definitions)
   menu: (base) => ({
     ...base,
-  backgroundColor: 'var(--glass-bg-menu, rgba(255,255,255,0.9))',
-  backdropFilter: 'blur(8px)',
-  WebkitBackdropFilter: 'blur(8px)',
-  borderRadius: '0.75rem',
-  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.12)',
-  zIndex: 9999,
-  fontSize: '1rem',
-  border: '1px solid rgba(255,255,255,0.18)',
+    background: (typeof window !== 'undefined' && document.documentElement.classList.contains('dark')) ? 'rgba(6,8,10,0.72)' : 'var(--glass-bg-menu, rgba(255,255,255,0.9))',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    borderRadius: '0.75rem',
+    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.12)',
+    zIndex: 9999,
+    fontSize: '1rem',
+    border: '1px solid rgba(255,255,255,0.18)',
   }),
   menuPortal: base => ({
     ...base,
@@ -115,17 +125,6 @@ const selectStyles = {
       ':hover': { backgroundColor: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)', color: isDark ? 'var(--glass-fg, #e6eef8)' : 'var(--glass-fg, #1e293b)' },
     }
   },
-  option: (base, state) => ({
-    ...base,
-    backgroundColor: state.isSelected
-      ? 'var(--accent, #2563eb)'
-      : state.isFocused
-      ? 'rgba(37,99,235,0.06)'
-      : 'transparent',
-    color: state.isSelected ? 'white' : 'var(--glass-fg, #1e293b)',
-    fontWeight: state.isSelected ? 600 : 400,
-    cursor: 'pointer',
-  }),
   placeholder: (base, state) => ({
     ...base,
     color: typeof window !== 'undefined' && document.documentElement.classList.contains('dark')
@@ -139,27 +138,20 @@ const selectStyles = {
     color: 'var(--glass-fg, #e6eef8)',
     fontSize: '1rem',
   }),
+  // Unified option style (merged duplicate definitions)
   option: (base, state) => {
-    // Soften the accent on hover/selected so the menu is less visually aggressive.
     const hoverBg = 'rgba(59,130,246,0.08)';
     const selectedBg = 'rgba(59,130,246,0.12)';
     const isDark = (typeof window !== 'undefined' && document.documentElement.classList.contains('dark'));
     return {
       ...base,
       backgroundColor: state.isSelected ? selectedBg : state.isFocused ? hoverBg : 'transparent',
-      color: isDark ? 'var(--glass-fg, #e6eef8)' : 'var(--glass-fg, #1e293b)',
+      color: state.isSelected ? 'white' : (isDark ? 'var(--glass-fg, #e6eef8)' : 'var(--glass-fg, #1e293b)'),
+      fontWeight: state.isSelected ? 600 : 400,
       padding: '8px 12px',
       cursor: 'pointer',
     };
   },
-  menu: (base) => ({
-    ...base,
-    background: (typeof window !== 'undefined' && document.documentElement.classList.contains('dark')) ? 'rgba(6,8,10,0.72)' : 'rgba(255,255,255,0.92)',
-    backdropFilter: 'blur(6px)',
-    WebkitBackdropFilter: 'blur(6px)',
-    borderRadius: '0.5rem',
-    boxShadow: '0 8px 32px rgba(2,6,23,0.5)'
-  }),
   menuList: (base) => ({
     ...base,
     maxHeight: '240px',
@@ -297,10 +289,11 @@ export default function StationList({ onSelectStation, favorites, toggleFavorite
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      className="space-y-4"
+      variants={listVariants}
+      initial="initial"
+      animate="enter"
+      exit="exit"
+      className="space-y-4 min-w-0"
     >
   <div className="sticky top-4 z-20">
     <div className="flex items-center justify-between md:hidden mb-2">

@@ -70,6 +70,7 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
   const [audioKey, setAudioKey] = useState(0); // force remount audio element
   const hlsRef = useRef(null);
   const metaEsRef = useRef(null);
+  const userStoppedRef = useRef(false);
 
   useEffect(() => saveLocal('eq_gains', gains), [gains]);
   useEffect(() => saveLocal('eq_preset', selectedPreset), [selectedPreset]);
@@ -118,7 +119,8 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
 
   useEffect(() => {
     if (!station) return;
-    setAudioKey(k => k + 1); // force new <audio> element for each station
+  userStoppedRef.current = false;
+  setAudioKey(k => k + 1); // force new <audio> element for each station
   }, [station, useProxy]);
 
   // Restore volume after audio element remounts
@@ -212,16 +214,23 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
             if (ctx.state === 'suspended') {
               await ctx.resume();
             }
-              await audioRef.current.play();
-              setPlaying(true);
-              if (setPlayingOnApp) setPlayingOnApp(true);
-              // If the stream doesn't provide metadata immediately, show the station name
-              try {
-                if (setNowPlaying) {
-                  // Only set fallback if there's no existing nowPlaying text
-                  setNowPlaying(prev => (prev && prev.length > 0) ? prev : (station && (station.name || station.title || station.stationuuid) ? (station.name || station.title || station.stationuuid) : ''));
-                }
-              } catch (e) {}
+            // If the user explicitly stopped playback recently, don't auto-play here.
+            if (userStoppedRef.current) {
+              // keep playing state false and do not start playback
+              setPlaying(false);
+              if (setPlayingOnApp) setPlayingOnApp(false);
+              return;
+            }
+            await audioRef.current.play();
+            setPlaying(true);
+            if (setPlayingOnApp) setPlayingOnApp(true);
+            // If the stream doesn't provide metadata immediately, show the station name
+            try {
+              if (setNowPlaying) {
+                // Only set fallback if there's no existing nowPlaying text
+                setNowPlaying(prev => (prev && prev.length > 0) ? prev : (station && (station.name || station.title || station.stationuuid) ? (station.name || station.title || station.stationuuid) : ''));
+              }
+            } catch (e) {}
           } catch (err) {
             setPlaying(false);
             if (setPlayingOnApp) setPlayingOnApp(false);
@@ -435,7 +444,9 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
         return false;
       }
 
-      await audioRef.current.play();
+  // Clear any user-stopped guard so play proceeds
+  userStoppedRef.current = false;
+  await audioRef.current.play();
   setPlaying(true);
   if (setPlayingOnApp) setPlayingOnApp(true);
       // Fallback nowPlaying when play invoked programmatically
@@ -468,6 +479,8 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
   const handleStop = () => {
     if (!audioRef.current) return;
     // Pause and fully reset audio element and audio graph
+  // Mark that the user explicitly stopped playback so auto-play won't restart
+  userStoppedRef.current = true;
     audioRef.current.pause();
     audioRef.current.removeAttribute('src');
     audioRef.current.load();
@@ -491,7 +504,9 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
   if (audioCtx && audioCtx.state !== 'closed') { audioCtx.close().catch(() => {}); setAudioCtx(null) }
 
   // Inform parent to clear selected station so Player won't re-initialize
-  try { if (onClose) onClose(); } catch (e) {}
+  // Previously the parent was informed to clear `selected` which caused the
+  // Player/aside to unmount and remount, producing a visible flicker. Keep the
+  // selected station in the UI when stopping audio to avoid layout refreshes.
   };
   const handlePause = () => {
     if (!audioRef.current) return;

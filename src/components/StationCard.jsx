@@ -1,6 +1,6 @@
 import React from 'react'
 
-export default function StationCard({ station, onPlay, isFav, onToggleFav, nowPlaying = '' }) {
+function StationCard({ station, onPlay, isFav, onToggleFav, nowPlaying = '' }) {
   return (
     <div className="flex flex-col h-full min-h-[220px] p-4 rounded-lg shadow-lg bg-white/40 dark:bg-gray-800/40 backdrop-blur-md border border-white/20 dark:border-black/20 hover:shadow-2xl transition-shadow duration-200">
       <div className="flex-shrink-0 mb-3">
@@ -48,3 +48,5 @@ export default function StationCard({ station, onPlay, isFav, onToggleFav, nowPl
     </div>
   );
 }
+
+export default React.memo(StationCard);
