@@ -174,6 +174,7 @@ export default function App() {
               showOnlyFavorites={showOnlyFavorites}
               setShowOnlyFavorites={setShowOnlyFavorites}
               nowPlaying={nowPlaying}
+              theme={theme}
             />
           </main>
 
@@ -192,6 +193,7 @@ export default function App() {
               registerControls={registerControls}
               setPlayingOnApp={setPlayerPlaying}
               setNowPlaying={setNowPlaying}
+              theme={theme}
             />
             {!visBg && (
               <Visualization analyser={analyserRef} audioCtx={audioCtx} visBg={visBg} setVisBg={setVisBg} />

@@ -4,7 +4,7 @@
 
 /* Glassmorphism styles */
 .glass {
-  background: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.85);
   backdrop-filter: blur(8px) saturate(120%);
   -webkit-backdrop-filter: blur(8px) saturate(120%);
   border: 1px solid rgba(255,255,255,0.06);
@@ -56,3 +56,23 @@ body {
   background: white;
   border: 2px solid rgba(0,0,0,0.2);
 }
+
+/* Theme-aware button used across the app for icon buttons */
+.btn-theme {
+  background-color: rgba(255,255,255,0.96);
+  border: 1px solid rgba(0,0,0,0.08);
+  color: #0f172a; /* slate-900 */
+}
+.btn-theme:hover {
+  filter: brightness(0.98);
+}
+.btn-theme:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(59,130,246,0.18);
+}
+.dark .btn-theme {
+  background-color: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: #e6eef8;
+}
+

@@ -125,21 +125,21 @@ export default function FooterPlayer({ station, isFavorite, playerControls = nul
           <div className="truncate min-w-0">
             <div className="font-medium text-sm truncate">{station ? station.name : 'No station selected'}</div>
               {nowPlaying ? (
-                <div className="text-xs text-gray-200 truncate">{nowPlaying}</div>
+                <div className="text-xs truncate text-gray-900 dark:text-gray-200">{nowPlaying}</div>
               ) : (
-                <div className="text-xs text-gray-400 truncate">{station ? `${station.country} • ${station.codec} • ${station.bitrate} kbps` : 'Select a station to play'}</div>
+                <div className="text-xs truncate text-gray-500 dark:text-gray-400">{station ? `${station.country} • ${station.codec} • ${station.bitrate} kbps` : 'Select a station to play'}</div>
               )}
           </div>
         </div>
         <div className="flex items-center gap-4 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <button onClick={handleTogglePlay} className="p-2 sm:px-3 sm:py-1 rounded glass" aria-label={playing ? 'Pause' : 'Play'} title={playing ? 'Pause' : 'Play'} aria-pressed={playing}>
+            <button onClick={handleTogglePlay} className="p-2 sm:px-3 sm:py-1 rounded btn-theme" aria-label={playing ? 'Pause' : 'Play'} title={playing ? 'Pause' : 'Play'} aria-pressed={playing}>
               {playing ? (
-                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                   <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
                 </svg>
               ) : (
-                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                   <path d="M8 5v14l11-7z" />
                 </svg>
               )}
@@ -188,20 +188,20 @@ export default function FooterPlayer({ station, isFavorite, playerControls = nul
                 if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
                 setLongPressActive(false);
               }}
-              className="p-2 rounded glass flex-shrink-0"
+              className="p-2 rounded btn-theme flex-shrink-0"
               aria-label={muted ? 'Unmute' : 'Mute / Hold for volume'}
               title={muted ? 'Unmute' : 'Mute / Hold for volume'}
               aria-pressed={muted}
             >
               {muted ? (
                 // speaker with an X overlay
-                <svg className="w-5 h-5 text-gray-200" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                   <path d="M5 9v6h4l5 4V5L9 9H5z" fill="currentColor" />
                   <path d="M18 8l4 4M22 8l-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               ) : (
                 // simple speaker icon
-                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                   <path d="M5 9v6h4l5 4V5L9 9H5z" />
                   <path d="M16.5 12c0-1.77-.77-3.36-2-4.47v8.94c1.23-1.11 2-2.7 2-4.47z" />
                 </svg>

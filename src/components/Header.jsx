@@ -11,9 +11,9 @@ export default function Header({ theme, setTheme, visBg, setVisBg, nowPlaying = 
         <div>
           <h1 className="text-xl font-semibold">RadioStream</h1>
           {nowPlaying ? (
-            <p className="text-xs text-gray-200">Now playing: {nowPlaying}</p>
+            <p className="text-sm text-gray-900 dark:text-gray-200 truncate">Now playing: {nowPlaying}</p>
           ) : (
-            <p className="text-xs text-gray-400">Discover & play online radio stations</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Discover & play online radio stations</p>
           )}
         </div>
       </div>

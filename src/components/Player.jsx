@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import EQ from './EQ';
 import { PRESETS as BASE_PRESETS } from '../utils/presets';
+import Select from 'react-select';
+import selectStyles from '../utils/selectStyles';
 import Hls from 'hls.js';
 
 const MAX_BIQUAD_FREQ = 24000;
@@ -53,7 +55,7 @@ function getPresets() {
   return { ...BASE_PRESETS };
 }
 
-export default function Player({ station, onClose, toggleFavorite, isFavorite, setVisBg, setAnalyserRef, setAudioCtxFromApp, recentlyPlayed = [], registerControls = null, setPlayingOnApp = null, setNowPlaying = null }) {
+export default function Player({ station, onClose, toggleFavorite, isFavorite, setVisBg, setAnalyserRef, setAudioCtxFromApp, recentlyPlayed = [], registerControls = null, setPlayingOnApp = null, setNowPlaying = null, theme = 'dark' }) {
   const audioRef = useRef(null);
   const [audioCtx, setAudioCtx] = useState(null);
   const sourceRef = useRef(null);
@@ -601,25 +603,20 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
           <div className="flex flex-col gap-2 bg-white/30 dark:bg-black/30 backdrop-blur rounded-lg px-3 py-2">
             <div className="flex items-center gap-2 w-full">
               <label className="text-xs font-medium whitespace-nowrap mr-1">EQ Preset</label>
-              <select
-                value={selectedPreset}
-                onChange={e => applyPreset(e.target.value)}
-                className="rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 transition shadow"
-                style={{
-                  minWidth: 90,
-                  background: 'var(--glass-bg, rgba(255,255,255,0.35))',
-                  color: 'var(--glass-fg, #1e293b)',
-                  backdropFilter: 'blur(8px)',
-                  WebkitBackdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(255,255,255,0.25)',
-                  boxShadow: '0 8px 32px 0 rgba(31,38,135,0.10)',
-                  borderRadius: '0.75rem',
-                  transition: 'background 0.2s, color 0.2s',
-                }}
-              >
-                {/* glassmorphism theme effect is handled at the top of the component with useEffect */}
-                {Object.keys(presets).map(k => <option key={k} value={k}>{k}</option>)}
-              </select>
+              <div style={{ minWidth: 140 }}>
+                <Select
+                  value={{ value: selectedPreset, label: selectedPreset }}
+                  onChange={opt => applyPreset(opt ? opt.value : 'Flat')}
+                  options={Object.keys(presets).map(k => ({ value: k, label: k }))}
+                  styles={selectStyles(theme)}
+                  isSearchable={false}
+                  menuPlacement="auto"
+                  closeMenuOnSelect={true}
+                  className="react-select-container"
+                  classNamePrefix="select"
+                  menuPortalTarget={typeof window !== 'undefined' ? window.document.body : undefined}
+                />
+              </div>
               <button
                 onClick={() => applyPreset('Flat')}
                 className="ml-2 px-2 py-1 rounded-lg bg-blue-600 text-white text-xs font-semibold shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"

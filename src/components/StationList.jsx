@@ -14,6 +14,7 @@ import Spinner from './Spinner'
 import { motion } from 'framer-motion';
 import Select from 'react-select';
 import AsyncSelect from 'react-select/async';
+import selectStyles from '../utils/selectStyles';
 
 // Stable variants for the station list container to avoid re-triggering the
 // slide-in animation on every parent re-render (object identity changes
@@ -24,143 +25,10 @@ const listVariants = {
   exit: { opacity: 0, y: 20 }
 };
 
-const selectStyles = {
-  control: (base, state) => {
-    // Always use the same glass background for the control so selected filters
-    // visually match the search input. Improve dark-mode contrast by slightly
-    // increasing opacity and adding a subtle border.
-    const isDark = (typeof window !== 'undefined' && document.documentElement.classList.contains('dark'));
-    const glassBg = isDark ? 'rgba(8,10,12,0.42)' : 'rgba(255,255,255,0.30)';
-    const baseBorder = isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.06)';
-    const focusRing = '0 0 0 2px var(--accent, #3b82f6)';
-    const baseShadow = isDark ? '0 8px 32px 0 rgba(2,6,23,0.6)' : '0 8px 32px 0 rgba(31,38,135,0.04)';
-    return {
-      ...base,
-      backgroundColor: glassBg,
-      backdropFilter: 'blur(8px)',
-      WebkitBackdropFilter: 'blur(8px)',
-      borderRadius: '0.75rem', // more rounded
-      border: state.isFocused ? `2px solid var(--accent, #3b82f6)` : baseBorder,
-      boxShadow: state.isFocused ? `${focusRing}, 0 8px 32px 0 rgba(31,38,135,0.12)` : baseShadow,
-      minHeight: '2.5rem',
-      fontSize: '1rem',
-      color: 'var(--glass-fg, #e6eef8)',
-      padding: '0.5rem 0.75rem',
-      transition: 'border-color 0.18s, box-shadow 0.18s, background-color 0.18s',
-      outline: state.isFocused ? `2px solid var(--accent, #3b82f6)` : 'none',
-      outlineOffset: '0',
-      boxSizing: 'border-box',
-      backdropBlendMode: 'overlay',
-    };
-  },
-  valueContainer: (base) => ({
-    ...base,
-    padding: 0,
-    paddingLeft: 0,
-  }),
-  input: (base) => ({
-    ...base,
-    margin: 0,
-    padding: 0,
-    color: '#1e293b',
-    fontSize: '1rem',
-    backgroundColor: 'transparent',
-  }),
-  // Unified menu style (merged duplicate definitions)
-  menu: (base) => ({
-    ...base,
-    background: (typeof window !== 'undefined' && document.documentElement.classList.contains('dark')) ? 'rgba(6,8,10,0.72)' : 'var(--glass-bg-menu, rgba(255,255,255,0.9))',
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
-    borderRadius: '0.75rem',
-    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.12)',
-    zIndex: 9999,
-    fontSize: '1rem',
-    border: '1px solid rgba(255,255,255,0.18)',
-  }),
-  menuPortal: base => ({
-    ...base,
-    zIndex: 9999,
-  }),
-  multiValue: (base) => {
-    const isDark = (typeof window !== 'undefined' && document.documentElement.classList.contains('dark'));
-    return {
-      ...base,
-      display: 'inline-flex',
-      alignItems: 'center',
-      height: '1.9rem',
-      margin: '2px',
-      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-      borderRadius: '0.5rem',
-      color: isDark ? 'var(--glass-fg, #e6eef8)' : 'var(--glass-fg, #1e293b)',
-      fontWeight: 600,
-      padding: '0 6px',
-      border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.06)',
-      boxSizing: 'border-box',
-    }
-  },
-  multiValueLabel: (base) => {
-    const isDark = (typeof window !== 'undefined' && document.documentElement.classList.contains('dark'));
-    return {
-      ...base,
-      color: isDark ? 'var(--glass-fg, #e6eef8)' : 'var(--glass-fg, #1e293b)',
-      fontWeight: 600,
-      padding: '0 6px',
-      fontSize: '0.95rem',
-      lineHeight: '1.9rem',
-    }
-  },
-  multiValueRemove: (base) => {
-    const isDark = (typeof window !== 'undefined' && document.documentElement.classList.contains('dark'));
-    return {
-      ...base,
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      color: isDark ? 'var(--glass-fg, #e6eef8)' : 'var(--glass-fg, #1e293b)',
-      backgroundColor: 'transparent',
-      borderRadius: '0.25rem',
-      padding: '0 6px',
-      cursor: 'pointer',
-      ':hover': { backgroundColor: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.08)', color: isDark ? 'var(--glass-fg, #e6eef8)' : 'var(--glass-fg, #1e293b)' },
-    }
-  },
-  placeholder: (base, state) => ({
-    ...base,
-    color: typeof window !== 'undefined' && document.documentElement.classList.contains('dark')
-      ? '#cbd5e1' // light slate for dark mode
-      : '#9ca3af',
-    fontWeight: 400,
-    fontSize: '1rem',
-  }),
-  singleValue: (base) => ({
-    ...base,
-    color: 'var(--glass-fg, #e6eef8)',
-    fontSize: '1rem',
-  }),
-  // Unified option style (merged duplicate definitions)
-  option: (base, state) => {
-    const hoverBg = 'rgba(59,130,246,0.08)';
-    const selectedBg = 'rgba(59,130,246,0.12)';
-    const isDark = (typeof window !== 'undefined' && document.documentElement.classList.contains('dark'));
-    return {
-      ...base,
-      backgroundColor: state.isSelected ? selectedBg : state.isFocused ? hoverBg : 'transparent',
-      color: state.isSelected ? 'white' : (isDark ? 'var(--glass-fg, #e6eef8)' : 'var(--glass-fg, #1e293b)'),
-      fontWeight: state.isSelected ? 600 : 400,
-      padding: '8px 12px',
-      cursor: 'pointer',
-    };
-  },
-  menuList: (base) => ({
-    ...base,
-    maxHeight: '240px',
-    padding: 0,
-  }),
-};
-
-export default function StationList({ onSelectStation, favorites, toggleFavorite, showOnlyFavorites, setShowOnlyFavorites, nowPlaying = '' }) {
+// using shared selectStyles from utils/selectStyles.js for project-wide parity
+export default function StationList({ onSelectStation, favorites, toggleFavorite, showOnlyFavorites, setShowOnlyFavorites, nowPlaying = '', theme = 'dark' }) {
   const [filtersOpen, setFiltersOpen] = useState(true);
+  const isDark = theme === 'dark';
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(12)
   const [totalCount, setTotalCount] = useState(null)
@@ -325,7 +193,10 @@ export default function StationList({ onSelectStation, favorites, toggleFavorite
             )}
           </label>
           <div className="relative">
-            <div className="w-full rounded-lg px-3 py-2 bg-white/30 dark:bg-black/30 backdrop-blur-sm border border-white/20 dark:border-black/20">
+            <div className="w-full rounded-lg px-3 py-2 backdrop-blur-sm" style={{
+              backgroundColor: isDark ? 'rgba(8,10,12,0.62)' : 'rgba(255,255,255,0.30)',
+              border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.06)'
+            }}>
               <input
               value={localQ}
               onChange={e => {
@@ -385,7 +256,7 @@ export default function StationList({ onSelectStation, favorites, toggleFavorite
             placeholder="Select country..."
             closeMenuOnSelect={true}
             menuPlacement="auto"
-            styles={selectStyles}
+            styles={selectStyles(theme)}
             loadOptions={loadCountryOptions}
             defaultOptions={countryOptions}
             isClearable={false}
@@ -407,7 +278,7 @@ export default function StationList({ onSelectStation, favorites, toggleFavorite
             placeholder="Select tags..."
             closeMenuOnSelect={false}
             menuPlacement="auto"
-            styles={selectStyles}
+            styles={selectStyles(theme)}
             loadOptions={loadTagOptions}
             defaultOptions={tagOptions}
             isClearable={false}
@@ -430,7 +301,7 @@ export default function StationList({ onSelectStation, favorites, toggleFavorite
             placeholder="Select codec..."
             closeMenuOnSelect={true}
             menuPlacement="auto"
-            styles={selectStyles}
+            styles={selectStyles(theme)}
             loadOptions={loadCodecOptions}
             defaultOptions={codecOptions}
             isClearable={false}

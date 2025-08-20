@@ -22,7 +22,7 @@ export default function MoreMenu({ visBg, setVisBg, theme, setTheme, exportFavor
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-56 bg-white/70 dark:bg-black/70 glass backdrop-blur-md rounded-lg p-3 shadow-lg border border-white/10 z-50">
+        <div className="absolute right-0 mt-2 w-56 bg-white/90 dark:bg-gray-800/90 glass backdrop-blur-md rounded-lg p-3 shadow-lg border border-white/20 z-50">
           <div className="flex items-center justify-between mb-2">
             <span className="font-semibold text-sm">Settings</span>
             <button className="text-xs text-gray-400" onClick={() => setOpen(false)}>Close</button>
