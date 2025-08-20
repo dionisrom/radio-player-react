@@ -13,6 +13,7 @@
   ],
   "routes": [
   { "handle": "filesystem" },
+  { "src": "\/assets\/(.*)\\.webmanifest", "dest": "/assets/$1.webmanifest" },
   { "src": "/api/(.*)", "dest": "/api/$1.js" },
   { "src": "\/(.*)", "dest": "/index.html" }
   ]
