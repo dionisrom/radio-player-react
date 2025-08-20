@@ -1,4 +1,5 @@
 import React from 'react'
+import defaultIcon from '../../default-radio-icon.png'
 
 function StationCard({ station, onPlay, isFav, onToggleFav, nowPlaying = '' }) {
   const isDark = (typeof window !== 'undefined' && document.documentElement.classList.contains('dark'));
@@ -10,7 +11,7 @@ function StationCard({ station, onPlay, isFav, onToggleFav, nowPlaying = '' }) {
             src={station.favicon}
             alt={station.name}
             className="max-h-full max-w-full object-contain"
-            onError={(e) => { e.target.onerror = null; e.target.src = '/default-radio-icon.png'; }}
+            onError={(e) => { e.target.onerror = null; e.target.src = defaultIcon; }}
           />
         </div>
       </div>
