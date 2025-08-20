@@ -46,13 +46,35 @@ module.exports = (req, res) => {
         'accept-ranges': proxyRes.headers['accept-ranges'] || 'bytes',
         'content-length': proxyRes.headers['content-length'] || undefined,
       });
+      // Pipe upstream response to the client and ensure we clean up if the
+      // client disconnects so upstream connections don't remain open.
       proxyRes.pipe(res, { end: true });
+
+      // If upstream errors, close client response
+      proxyRes.on('error', (err) => {
+        try { console.error('Proxy upstream error', err); } catch(e){}
+        try { res.end(); } catch(e){}
+      });
+
+      // If the client disconnects, abort the upstream request and destroy
+      // the upstream response stream to free resources promptly.
+      const onClientClose = () => {
+        try { proxyReq.destroy && proxyReq.destroy(); } catch (e) {}
+        try { proxyRes.destroy && proxyRes.destroy(); } catch (e) {}
+      };
+      res.on('close', onClientClose);
     });
 
     proxyReq.on('error', (err) => {
       console.error('Proxy request error', err);
       res.statusCode = 502;
-      res.end('Bad gateway');
+      try { res.end('Bad gateway'); } catch(e){}
+    });
+
+    // If the incoming client request is aborted/closed before the proxy request
+    // completes, make sure to destroy the proxy request as well.
+    req.on('close', () => {
+      try { proxyReq.destroy && proxyReq.destroy(); } catch (e) {}
     });
 
     proxyReq.end();

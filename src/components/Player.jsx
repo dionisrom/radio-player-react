@@ -111,8 +111,11 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
       setVolume(prev => (Math.abs(prev - v) > 0.0005 ? v : prev));
     };
     el.addEventListener('volumechange', onVolumeChange);
-    return () => el.removeEventListener('volumechange', onVolumeChange);
-  }, [audioRef.current]);
+    return () => {
+      try { el.removeEventListener('volumechange', onVolumeChange); } catch (e) {}
+    };
+    // Re-run when audio element is remounted (audioKey forces remount)
+  }, [audioKey]);
 
   useEffect(() => {
     if (!audioRef.current) return;
