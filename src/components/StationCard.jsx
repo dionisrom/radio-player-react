@@ -7,7 +7,7 @@ function StationCard({ station, onPlay, isFav, onToggleFav, nowPlaying = '' }) {
       <div className="flex-shrink-0 mb-3">
         <div className="w-full h-28 bg-white/10 dark:bg-black/10 rounded-md flex items-center justify-center overflow-hidden" style={{ minHeight: '5.5rem' }}>
           <img
-            src={station.favicon || '/default-radio-icon.png'}
+            src={station.favicon}
             alt={station.name}
             className="max-h-full max-w-full object-contain"
             onError={(e) => { e.target.onerror = null; e.target.src = '/default-radio-icon.png'; }}

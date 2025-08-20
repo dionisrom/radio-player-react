@@ -71,3 +71,34 @@ MIT
 ---
 
 Made with ❤️ by [dionisrom](https://github.com/dionisrom)
+
+## Deployment (Vercel)
+
+This project is ready to deploy to Vercel as a static site with Node serverless API routes.
+
+Quick deploy (Vercel dashboard):
+
+1. Push your repository to GitHub.
+2. In the Vercel dashboard click "New Project" and import the repository.
+3. Set the Build Command to `npm run build` and the Output Directory to `dist` if not detected automatically.
+4. Deploy — Vercel will also deploy `api/*.js` as serverless Node functions.
+
+One-off CLI deploy:
+
+```powershell
+# Install the Vercel CLI if you need it
+npm i -g vercel
+vercel login
+vercel --prod
+```
+
+CI / GitHub Actions deploy (automated):
+
+- Create the repository secret `VERCEL_TOKEN` in GitHub (and optionally `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID`).
+- A workflow is included at `.github/workflows/vercel-deploy.yml` which runs `npm ci`, `npm run build`, and then deploys with `vercel --prod` using the token.
+
+Notes:
+
+- The Vite production build outputs to `dist/` (this is what Vercel will serve).
+- Your `api/` handlers follow the `(req, res)` Node signature and will be deployed as serverless functions.
+- Serverless functions have execution time limits; long-lived SSE connections may be constrained. If you need long-running connections consider a different hosting approach for that endpoint.
