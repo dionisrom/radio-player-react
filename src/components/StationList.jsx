@@ -8,7 +8,7 @@ if (typeof document !== 'undefined' && !document.getElementById('filter-zero-pad
     .filter-zero-padding:focus-within { padding-top: 0 !important; padding-bottom: 0 !important; }`;
   document.head.appendChild(style);
 }
-import { fetchStations, fetchTags, fetchCountries, fetchCodecs, searchTagsByName, searchCountriesByName, searchCodecsByName } from '../utils/radiobrowser'
+import { fetchStations, fetchTopVoted, fetchTags, fetchCountries, fetchCodecs, searchTagsByName, searchCountriesByName, searchCodecsByName } from '../utils/radiobrowser'
 import StationCard from './StationCard'
 import Spinner from './Spinner'
 import { motion } from 'framer-motion';
@@ -29,18 +29,47 @@ const listVariants = {
 export default function StationList({ onSelectStation, favorites, toggleFavorite, showOnlyFavorites, setShowOnlyFavorites, nowPlaying = '', theme = 'dark' }) {
   const [filtersOpen, setFiltersOpen] = useState(true);
   const isDark = theme === 'dark';
-  const [page, setPage] = useState(1)
+
+  // Parse initial values from URL (shareable links)
+  const parseInitial = () => {
+    if (typeof window === 'undefined') return {
+      q: '', page: 1, selectedCountry: null, selectedTags: [], selectedCodec: null
+    };
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q') || '';
+    const page = Math.max(1, parseInt(params.get('page') || '1', 10) || 1);
+    const country = params.get('country');
+    const tags = params.get('tags');
+    const codec = params.get('codec');
+    return {
+      q,
+      page,
+      selectedCountry: country ? { value: country, label: country } : null,
+      selectedTags: tags ? tags.split(',').filter(Boolean).map(t => ({ value: t, label: t })) : [],
+      selectedCodec: codec ? { value: codec, label: codec } : null,
+    };
+  };
+
+  const initial = parseInitial();
+  const [page, setPage] = useState(initial.page || 1)
   const [perPage, setPerPage] = useState(12)
   const [totalCount, setTotalCount] = useState(null)
   const [stations, setStations] = useState([])
   const [loading, setLoading] = useState(false)
-  const [q, setQ] = useState('')
+  const [q, setQ] = useState(initial.q || '')
   // local input state for debounced search to avoid excessive API calls
-  const [localQ, setLocalQ] = useState(q);
+  const [localQ, setLocalQ] = useState(initial.q || '');
   const searchTimeout = useRef(null);
   const [selectedCountry, setSelectedCountry] = useState(null)
   const [selectedTags, setSelectedTags] = useState([])
   const [selectedCodec, setSelectedCodec] = useState(null)
+  // initialize from parsed initial values
+  useEffect(() => {
+    if (initial.selectedCountry) setSelectedCountry(initial.selectedCountry);
+    if (initial.selectedTags && initial.selectedTags.length) setSelectedTags(initial.selectedTags);
+    if (initial.selectedCodec) setSelectedCodec(initial.selectedCodec);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [countryOptions, setCountryOptions] = useState([])
   const [tagOptions, setTagOptions] = useState([])
   const [codecOptions, setCodecOptions] = useState([])
@@ -126,6 +155,21 @@ export default function StationList({ onSelectStation, favorites, toggleFavorite
   useEffect(() => {
     setLocalQ(q || '');
   }, [q]);
+
+  // Reflect key filter/search state in the URL so it can be shared/bookmarked
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (q) params.set('q', q); else params.delete('q');
+    if (page && page > 1) params.set('page', String(page)); else params.delete('page');
+    if (selectedCountry && selectedCountry.value) params.set('country', selectedCountry.value); else params.delete('country');
+    if (selectedTags && selectedTags.length) params.set('tags', selectedTags.map(t => t.value).join(',')); else params.delete('tags');
+    if (selectedCodec && selectedCodec.value) params.set('codec', selectedCodec.value); else params.delete('codec');
+    const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : '');
+    if (newUrl !== window.location.pathname + window.location.search) {
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [q, page, selectedCountry, selectedTags, selectedCodec]);
 
   // Cleanup pending debounce on unmount
   useEffect(() => {

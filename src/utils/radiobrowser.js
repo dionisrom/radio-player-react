@@ -29,6 +29,21 @@ export async function fetchStations({page=1, perPage=16, name='', countries=[], 
   return data;
 }
 
+// Fetch top voted stations using /stations/topvote
+export async function fetchTopVoted({ offset = 0, perPage = 12, hidebroken = true } = {}) {
+  const params = new URLSearchParams();
+  params.set('offset', String(offset));
+  params.set('limit', String(perPage));
+  if (hidebroken) params.set('hidebroken', 'true');
+  const url = `${BASE}/stations/topvote?${params.toString()}`;
+  if (stationsCache.has(url)) return stationsCache.get(url);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Radio Browser API error');
+  const data = await res.json();
+  stationsCache.set(url, data);
+  return data;
+}
+
 
 
 // Cache for fetchTags API call

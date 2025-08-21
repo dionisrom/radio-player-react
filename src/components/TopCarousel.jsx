@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 // import { motion, AnimatePresence } from 'framer-motion';
 import StationCard from './StationCard';
-import { fetchStations } from '../utils/radiobrowser';
+import { fetchTopVoted } from '../utils/radiobrowser';
 import StationCardCarousel from './StationCardCarousel';
 
 function FavoritesCarousel({ favorites, onSelectStation, toggleFavorite }) {
@@ -149,7 +149,7 @@ function TopCarousel({ favorites, onSelectStation, toggleFavorite, component }) 
       setLoading(true);
       (async () => {
         try {
-          const results = await fetchStations({ perPage: 20 });
+          const results = await fetchTopVoted({ perPage: 12 });
           if (isMounted) setStations(results || []);
         } catch (err) {
           console.error('Failed to fetch discover stations', err);
