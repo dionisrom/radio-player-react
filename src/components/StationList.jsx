@@ -378,55 +378,64 @@ export default function StationList({ onSelectStation, favorites, toggleFavorite
       </div>
 
       <div className="mt-4 flex flex-col md:flex-row items-center justify-between gap-2">
-        <div className="text-sm text-gray-500 mr-3">
-          {stations.length > 0 ? (
-            (() => {
-              const start = (page - 1) * perPage + 1;
-              const end = start + stations.length - 1;
-              return (<span className="text-xs">Showing <span className="font-medium text-gray-700">{start}–{end}</span>{totalCount ? <span> of <span className="font-medium">{totalCount}</span></span> : ''}</span>);
-            })()
-          ) : (
-            <span className="text-xs text-gray-400">No results</span>
-          )}
-        </div>
+        <div className="flex flex-col md:flex-row w-full items-center justify-between gap-2">
+          <div className="text-xs text-gray-500 flex-1">
+            {stations.length > 0 ? (
+              (() => {
+                const start = (page - 1) * perPage + 1;
+                const end = start + stations.length - 1;
+                return (
+                  <span>
+                    Showing <span className="font-medium text-gray-700">{start}–{end}</span>
+                    {totalCount ? <span> of <span className="font-medium">{totalCount}</span></span> : ''}
+                  </span>
+                );
+              })()
+            ) : (
+              <span className="text-gray-400">No results</span>
+            )}
+          </div>
 
-        <div className="flex items-center gap-2 mr-2">
-          <label className="sr-only">Per page</label>
-          <div className="inline-flex items-center gap-1 text-xs text-gray-500">
-            <svg className="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-              <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <select value={perPage} onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }} className="text-xs rounded px-2 py-1 bg-gray-100 dark:bg-gray-800 border">
+          <div className="flex items-center gap-3">
+            <label className="text-xs text-gray-500" htmlFor="per-page-select">Per page:</label>
+            <select
+              id="per-page-select"
+              value={perPage}
+              onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }}
+              className="text-xs rounded px-2 py-1 bg-gray-100 dark:bg-gray-800 border"
+            >
               <option value={12}>12</option>
               <option value={24}>24</option>
               <option value={48}>48</option>
             </select>
           </div>
-        </div>
 
-        <div className="flex items-center gap-1">
-          <button aria-label="Previous page" title="Previous" className="p-2 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 disabled:opacity-50" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}>
-            <svg className="w-4 h-4 text-gray-700" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-              <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-
-          <div className="flex items-center gap-2 px-1">
-            <label className="text-xs text-gray-500">Page</label>
-            <input
-              type="number"
-              min={1}
-              value={page}
-              onChange={e => { const v = Number(e.target.value) || 1; setPage(Math.max(1, v)); }}
-              className="w-12 text-xs rounded px-2 py-1 bg-gray-100 dark:bg-gray-800 border"
-            />
-          </div>
-
-          <button aria-label="Next page" title="Next" className="p-2 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 disabled:opacity-50" onClick={() => setPage(p => p + 1)} disabled={(!showOnlyFavorites && stations.length < perPage) || (showOnlyFavorites && totalCount !== null && page * perPage >= totalCount)}>
-            <svg className="w-4 h-4 text-gray-700" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-              <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
+          <nav className="flex items-center gap-2" aria-label="Pagination">
+            <button
+              aria-label="Previous page"
+              title="Previous page"
+              className="px-3 py-1 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 disabled:opacity-50 text-xs font-medium"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page <= 1}
+            >
+              &larr; Prev
+            </button>
+            <span className="text-xs text-gray-700">
+              Page <span className="font-semibold">{page}</span>
+              {totalCount && totalCount > 0 ? (
+                <span> of <span className="font-semibold">{Math.ceil(totalCount / perPage)}</span></span>
+              ) : null}
+            </span>
+            <button
+              aria-label="Next page"
+              title="Next page"
+              className="px-3 py-1 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 disabled:opacity-50 text-xs font-medium"
+              onClick={() => setPage(p => p + 1)}
+              disabled={(!showOnlyFavorites && stations.length < perPage) || (showOnlyFavorites && totalCount !== null && page * perPage >= totalCount)}
+            >
+              Next &rarr;
+            </button>
+          </nav>
         </div>
       </div>
   </div>
