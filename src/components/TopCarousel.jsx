@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-// import { motion, AnimatePresence } from 'framer-motion';
-import StationCard from './StationCard';
 import { fetchTopVoted } from '../utils/radiobrowser';
 import StationCardCarousel from './StationCardCarousel';
 

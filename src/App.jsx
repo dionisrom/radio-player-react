@@ -4,7 +4,6 @@ import Header from './components/Header'
 import StationList from './components/StationList'
 import Player from './components/Player'
 import TopCarousel from './components/TopCarousel'
-import Discover from './components/Discover'
 import Visualization from './components/Visualization'
 import FooterPlayer from './components/FooterPlayer'
 
@@ -167,7 +166,6 @@ export default function App() {
               favorites={favorites}
               onSelectStation={handleSelectStation}
               toggleFavorite={toggleFavorite}
-              component={Discover}
             />
             <StationList
               onSelectStation={handleSelectStation}
