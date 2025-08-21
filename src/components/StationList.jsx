@@ -50,26 +50,23 @@ export default function StationList({ onSelectStation, favorites, toggleFavorite
     };
   };
 
-  const initial = parseInitial();
-  const [page, setPage] = useState(initial.page || 1)
-  const [perPage, setPerPage] = useState(12)
-  const [totalCount, setTotalCount] = useState(null)
-  const [stations, setStations] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [q, setQ] = useState(initial.q || '')
+  // Always initialize all filter state from URL on first render
+  const initial = useRef(parseInitial()).current;
+  const [page, setPage] = useState(initial.page || 1);
+  const [perPage, setPerPage] = useState(12);
+  const [totalCount, setTotalCount] = useState(null);
+  const [stations, setStations] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [q, setQ] = useState(initial.q || '');
   // local input state for debounced search to avoid excessive API calls
   const [localQ, setLocalQ] = useState(initial.q || '');
   const searchTimeout = useRef(null);
-  const [selectedCountry, setSelectedCountry] = useState(null)
-  const [selectedTags, setSelectedTags] = useState([])
-  const [selectedCodec, setSelectedCodec] = useState(null)
-  // initialize from parsed initial values
-  useEffect(() => {
-    if (initial.selectedCountry) setSelectedCountry(initial.selectedCountry);
-    if (initial.selectedTags && initial.selectedTags.length) setSelectedTags(initial.selectedTags);
-    if (initial.selectedCodec) setSelectedCodec(initial.selectedCodec);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const [selectedCountry, setSelectedCountry] = useState(initial.selectedCountry);
+  const [selectedTags, setSelectedTags] = useState(initial.selectedTags);
+  const [selectedCodec, setSelectedCodec] = useState(initial.selectedCodec);
+
+  // Track if first render to avoid running URL sync effect on mount
+  const didInit = useRef(false);
   const [countryOptions, setCountryOptions] = useState([])
   const [tagOptions, setTagOptions] = useState([])
   const [codecOptions, setCodecOptions] = useState([])
@@ -159,6 +156,10 @@ export default function StationList({ onSelectStation, favorites, toggleFavorite
   // Reflect key filter/search state in the URL so it can be shared/bookmarked
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (!didInit.current) {
+      didInit.current = true;
+      return;
+    }
     const params = new URLSearchParams(window.location.search);
     if (q) params.set('q', q); else params.delete('q');
     if (page && page > 1) params.set('page', String(page)); else params.delete('page');
