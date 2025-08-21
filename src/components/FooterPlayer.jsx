@@ -137,7 +137,7 @@ export default function FooterPlayer({ station, isFavorite, playerControls = nul
   <div className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-white/20 dark:border-black/20 backdrop-blur-md py-2 px-4">
       <div className="max-w-6xl mx-auto flex items-center gap-4">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className={`w-12 h-12 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-md flex items-center justify-center text-white font-bold text-sm transform transition-all duration-300 ${pulse ? 'scale-105 ring-4 ring-blue-400/40 shadow-lg' : ''}`}>FM</div>
+          <div className={`w-12 h-12 bg-linear-to-br from-blue-400 to-indigo-600 rounded-md flex items-center justify-center text-white font-bold text-sm transform transition-all duration-300 ${pulse ? 'scale-105 ring-4 ring-blue-400/40 shadow-lg' : ''}`}>FM</div>
           <div className="truncate min-w-0">
             <div className="font-medium text-sm truncate">{station ? station.name : 'No station selected'}</div>
               {nowPlaying ? (
@@ -147,9 +147,9 @@ export default function FooterPlayer({ station, isFavorite, playerControls = nul
               )}
           </div>
         </div>
-        <div className="flex items-center gap-4 flex-shrink-0">
+        <div className="flex items-center gap-4 shrink-0">
           <div className="flex items-center gap-2">
-            <button onClick={handleTogglePlay} className="p-2 sm:px-3 sm:py-1 rounded btn-theme" aria-label={playing ? 'Pause' : 'Play'} title={playing ? 'Pause' : 'Play'} aria-pressed={playing}>
+            <button onClick={handleTogglePlay} className="p-2 sm:px-3 sm:py-1 rounded-sm btn-theme" aria-label={playing ? 'Pause' : 'Play'} title={playing ? 'Pause' : 'Play'} aria-pressed={playing}>
               {playing ? (
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                   <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
@@ -160,7 +160,7 @@ export default function FooterPlayer({ station, isFavorite, playerControls = nul
                 </svg>
               )}
             </button>
-            <button onClick={handleStop} className="p-2 sm:px-3 sm:py-1 rounded bg-red-600 text-white" aria-label="Stop" title="Stop">
+            <button onClick={handleStop} className="p-2 sm:px-3 sm:py-1 rounded-sm bg-red-600 text-white" aria-label="Stop" title="Stop">
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <path d="M6 6h12v12H6z" />
               </svg>
@@ -204,7 +204,7 @@ export default function FooterPlayer({ station, isFavorite, playerControls = nul
                 if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
                 setLongPressActive(false);
               }}
-              className="p-2 rounded btn-theme flex-shrink-0"
+              className="p-2 rounded-sm btn-theme shrink-0"
               aria-label={muted ? 'Unmute' : 'Mute / Hold for volume'}
               title={muted ? 'Unmute' : 'Mute / Hold for volume'}
               aria-pressed={muted}
@@ -279,7 +279,7 @@ export default function FooterPlayer({ station, isFavorite, playerControls = nul
               )}
             </div>
 
-            <button onClick={handleToggleFav} className={`p-2 sm:px-3 sm:py-1 rounded ${isFavorite ? 'bg-yellow-400 text-black' : 'glass'}`} aria-label={isFavorite ? 'Unfavorite' : 'Favorite'} title={isFavorite ? 'Unfavorite' : 'Favorite'} aria-pressed={isFavorite}>
+            <button onClick={handleToggleFav} className={`p-2 sm:px-3 sm:py-1 rounded-sm ${isFavorite ? 'bg-yellow-400 text-black' : 'glass'}`} aria-label={isFavorite ? 'Unfavorite' : 'Favorite'} title={isFavorite ? 'Unfavorite' : 'Favorite'} aria-pressed={isFavorite}>
               {isFavorite ? (
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                   <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />

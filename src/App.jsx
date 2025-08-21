@@ -170,7 +170,7 @@ export default function App() {
           errorModalMode={errorModalMode}
           setErrorModalMode={setErrorModalMode}
         />
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr,420px] gap-6">
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6">
           <main
             className={`space-y-4 rounded-2xl p-2 md:p-16 pb-16 transition-all min-w-0 ${visBg ? 'backdrop-blur-lg bg-white/30 dark:bg-black/30 border border-white/20 dark:border-black/20 shadow-xl' : ''}`}
           >

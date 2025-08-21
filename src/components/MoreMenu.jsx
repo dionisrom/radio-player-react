@@ -25,7 +25,7 @@ export default function MoreMenu({ visBg, setVisBg, theme, setTheme, exportFavor
   <div className="absolute right-0 mt-2 w-72 bg-white/90 dark:bg-gray-800/90 glass backdrop-blur-md rounded-lg p-3 shadow-lg border border-white/20 z-50">
           <div className="flex items-center justify-between mb-2">
             <span className="font-semibold text-sm">Settings</span>
-            <button className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1 rounded transition" onClick={() => setOpen(false)} title="Close">
+            <button className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1 rounded-sm transition" onClick={() => setOpen(false)} title="Close">
               <XIcon className="w-4 h-4" />
             </button>
           </div>
@@ -39,7 +39,7 @@ export default function MoreMenu({ visBg, setVisBg, theme, setTheme, exportFavor
               <button
                 aria-label="Toggle dark mode"
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="px-3 py-1 rounded bg-gray-100 dark:bg-gray-800 text-sm"
+                className="px-3 py-1 rounded-sm bg-gray-100 dark:bg-gray-800 text-sm"
               >
                 {theme === 'dark' ? 'Dark' : 'Light'}
               </button>
@@ -64,7 +64,7 @@ export default function MoreMenu({ visBg, setVisBg, theme, setTheme, exportFavor
                 <div className="text-xs text-gray-400">How to dismiss stream errors</div>
               </div>
               <select
-                className="px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-sm"
+                className="px-2 py-1 rounded-sm bg-gray-100 dark:bg-gray-800 text-sm"
                 value={errorModalMode}
                 onChange={e => setErrorModalMode && setErrorModalMode(e.target.value)}
               >
@@ -78,7 +78,7 @@ export default function MoreMenu({ visBg, setVisBg, theme, setTheme, exportFavor
                 <div className="text-sm font-medium">Export Favorites</div>
                 <div className="text-xs text-gray-400">Download your favorites as JSON</div>
               </div>
-              <button onClick={() => { exportFavorites && exportFavorites(); setOpen(false) }} className="px-3 py-1 rounded bg-blue-600 text-white text-sm">Export</button>
+              <button onClick={() => { exportFavorites && exportFavorites(); setOpen(false) }} className="px-3 py-1 rounded-sm bg-blue-600 text-white text-sm">Export</button>
             </div>
 
             <div className="flex items-center justify-between">
@@ -88,7 +88,7 @@ export default function MoreMenu({ visBg, setVisBg, theme, setTheme, exportFavor
               </div>
               <div className="flex items-center gap-2">
                 <input ref={fileInputRef} type="file" accept="application/json" onChange={(e) => { importFavorites && importFavorites(e); setOpen(false) }} style={{ display: 'none' }} />
-                <button onClick={onImportClick} className="px-3 py-1 rounded bg-green-600 text-white text-sm">Import</button>
+                <button onClick={onImportClick} className="px-3 py-1 rounded-sm bg-green-600 text-white text-sm">Import</button>
               </div>
             </div>
 

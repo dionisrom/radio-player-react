@@ -5,7 +5,7 @@ function StationCard({ station, onPlay, isFav, onToggleFav, nowPlaying = '' }) {
   const isDark = (typeof window !== 'undefined' && document.documentElement.classList.contains('dark'));
   return (
     <div className="flex flex-col h-full min-h-[220px] p-4 rounded-lg shadow-lg bg-white/40 dark:bg-gray-800/40 backdrop-blur-md border border-white/20 dark:border-black/20 hover:shadow-2xl transition-shadow duration-200">
-      <div className="flex-shrink-0 mb-3">
+      <div className="shrink-0 mb-3">
         <div className="w-full h-28 bg-white/10 dark:bg-black/10 rounded-md flex items-center justify-center overflow-hidden" style={{ minHeight: '5.5rem' }}>
           <img
             src={station.favicon ? station.favicon : null}

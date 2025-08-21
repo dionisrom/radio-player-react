@@ -54,7 +54,7 @@ export default function BackgroundVisualization({ analyser, showVisualization = 
     <div className="fixed inset-0 z-0 pointer-events-none select-none" style={{ opacity: 0.25 }}>
       <canvas ref={canvasRef} style={{ width: '100vw', height: '100vh', display: 'block' }} />
       <div className="absolute top-2 right-4 z-10">
-        <label className="flex items-center gap-2 text-xs bg-white/60 dark:bg-black/40 px-2 py-1 rounded">
+        <label className="flex items-center gap-2 text-xs bg-white/60 dark:bg-black/40 px-2 py-1 rounded-sm">
           <input type="checkbox" checked={!!visBg} onChange={e => setVisBg(e.target.checked)} />
           Visualization as background
         </label>

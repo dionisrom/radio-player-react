@@ -211,7 +211,7 @@ export default function StationList({ onSelectStation, favorites, toggleFavorite
   <div className="sticky top-4 z-20">
     <div className="flex items-center justify-between md:hidden mb-2">
       <div className="text-sm font-medium">Filters</div>
-      <button type="button" aria-expanded={filtersOpen} aria-controls="filters-form" onClick={() => setFiltersOpen(v => !v)} className="px-2 py-1 rounded glass">
+      <button type="button" aria-expanded={filtersOpen} aria-controls="filters-form" onClick={() => setFiltersOpen(v => !v)} className="px-2 py-1 rounded-sm glass">
         <svg className={`w-4 h-4 transform transition-transform ${filtersOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
           <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
@@ -229,7 +229,7 @@ export default function StationList({ onSelectStation, favorites, toggleFavorite
                   if (searchTimeout.current) { clearTimeout(searchTimeout.current); searchTimeout.current = null }
                   setLocalQ(''); setQ(''); setSelectedCountry(null); setSelectedTags([]); setSelectedCodec(null); setPage(1);
                 }}
-                className="text-xs text-blue-500 font-medium rounded px-2 py-1 hover:bg-blue-50 dark:hover:bg-white/5"
+                className="text-xs text-blue-500 font-medium rounded-sm px-2 py-1 hover:bg-blue-50 dark:hover:bg-white/5"
                 aria-label="Clear all filters"
                 title="Clear all filters"
               >
@@ -238,7 +238,7 @@ export default function StationList({ onSelectStation, favorites, toggleFavorite
             )}
           </label>
           <div className="relative">
-            <div className="w-full rounded-lg px-3 py-2 backdrop-blur-sm" style={{
+            <div className="w-full rounded-lg px-3 py-2 backdrop-blur-xs" style={{
               backgroundColor: isDark ? 'rgba(8,10,12,0.62)' : 'rgba(255,255,255,0.30)',
               border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.06)'
             }}>
@@ -263,7 +263,7 @@ export default function StationList({ onSelectStation, favorites, toggleFavorite
                 }
               }}
               placeholder="Station name..."
-              className="w-full text-base bg-transparent placeholder-gray-500 dark:placeholder-gray-300 text-gray-900 dark:text-gray-100 outline-none"
+              className="w-full text-base bg-transparent placeholder-gray-500 dark:placeholder-gray-300 text-gray-900 dark:text-gray-100 outline-hidden"
               style={{ boxSizing: 'border-box', minHeight: '2rem', fontSize: '1rem' }}
             />
             </div>
@@ -403,7 +403,7 @@ export default function StationList({ onSelectStation, favorites, toggleFavorite
               id="per-page-select"
               value={perPage}
               onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }}
-              className="text-xs rounded px-2 py-1 bg-gray-100 dark:bg-gray-800 border"
+              className="text-xs rounded-sm px-2 py-1 bg-gray-100 dark:bg-gray-800 border"
             >
               <option value={12}>12</option>
               <option value={24}>24</option>
@@ -415,7 +415,7 @@ export default function StationList({ onSelectStation, favorites, toggleFavorite
             <button
               aria-label="Previous page"
               title="Previous page"
-              className="px-3 py-1 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 disabled:opacity-50 text-xs font-medium"
+              className="px-3 py-1 rounded-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 disabled:opacity-50 text-xs font-medium"
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page <= 1}
             >
@@ -430,7 +430,7 @@ export default function StationList({ onSelectStation, favorites, toggleFavorite
             <button
               aria-label="Next page"
               title="Next page"
-              className="px-3 py-1 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 disabled:opacity-50 text-xs font-medium"
+              className="px-3 py-1 rounded-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 disabled:opacity-50 text-xs font-medium"
               onClick={() => setPage(p => p + 1)}
               disabled={(!showOnlyFavorites && stations.length < perPage) || (showOnlyFavorites && totalCount !== null && page * perPage >= totalCount)}
             >

@@ -102,7 +102,7 @@ function FavoritesCarousel({ favorites, onSelectStation, toggleFavorite }) {
           <div className="absolute left-0 top-0 bottom-0 flex items-center z-20" style={{height: '100%', width: 48, margin: 0, padding: 0}}>
             <div className="glass flex items-center justify-center h-full w-full rounded-l-lg" style={{background: 'rgba(255,255,255,0.45)', backdropFilter: 'blur(8px) saturate(120%)'}}>
               <button
-                className="p-1 rounded-full focus:outline-none"
+                className="p-1 rounded-full focus:outline-hidden"
                 style={{ pointerEvents: 'auto' }}
                 onClick={() => scrollBy(-220)}
                 aria-label="Scroll left"
@@ -117,7 +117,7 @@ function FavoritesCarousel({ favorites, onSelectStation, toggleFavorite }) {
           <div className="absolute right-0 top-0 bottom-0 flex items-center z-20" style={{height: '100%', width: 48, margin: 0, padding: 0}}>
             <div className="glass flex items-center justify-center h-full w-full rounded-r-lg" style={{background: 'rgba(255,255,255,0.45)', backdropFilter: 'blur(8px) saturate(120%)'}}>
               <button
-                className="p-1 rounded-full focus:outline-none"
+                className="p-1 rounded-full focus:outline-hidden"
                 style={{ pointerEvents: 'auto' }}
                 onClick={() => scrollBy(220)}
                 aria-label="Scroll right"
@@ -228,7 +228,7 @@ function TopCarousel({ favorites, onSelectStation, toggleFavorite, component }) 
             <div className="absolute left-0 top-0 bottom-0 flex items-center z-20" style={{height: '100%', width: 48, margin: 0, padding: 0}}>
               <div className="glass flex items-center justify-center h-full w-full rounded-l-lg" style={{background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(8px) saturate(120%)'}}>
                 <button
-                  className="p-1 rounded-full focus:outline-none"
+                  className="p-1 rounded-full focus:outline-hidden"
                   style={{ pointerEvents: 'auto' }}
                   onClick={() => scrollBy(-220)}
                   aria-label="Scroll left"
@@ -243,7 +243,7 @@ function TopCarousel({ favorites, onSelectStation, toggleFavorite, component }) 
             <div className="absolute right-0 top-0 bottom-0 flex items-center z-20" style={{height: '100%', width: 48, margin: 0, padding: 0}}>
               <div className="glass flex items-center justify-center h-full w-full rounded-r-lg" style={{background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(8px) saturate(120%)'}}>
                 <button
-                  className="p-1 rounded-full focus:outline-none"
+                  className="p-1 rounded-full focus:outline-hidden"
                   style={{ pointerEvents: 'auto' }}
                   onClick={() => scrollBy(220)}
                   aria-label="Scroll right"
@@ -286,7 +286,7 @@ function TopCarousel({ favorites, onSelectStation, toggleFavorite, component }) 
     <div className="mb-8 w-full max-w-full relative">
       <div className="flex items-center gap-4 mb-4">
         <button
-          className={`px-4 py-2 rounded font-semibold transition-colors flex items-center gap-2 ${section === 'favorites' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+          className={`px-4 py-2 rounded-sm font-semibold transition-colors flex items-center gap-2 ${section === 'favorites' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
           onClick={() => handleSectionChange('favorites')}
           disabled={favorites.length === 0}
         >
@@ -294,7 +294,7 @@ function TopCarousel({ favorites, onSelectStation, toggleFavorite, component }) 
           <span className="inline-block min-w-[1.5em] px-2 py-0.5 rounded-full bg-white/80 dark:bg-black/40 text-blue-600 dark:text-blue-300 text-xs font-bold align-middle border border-blue-200 dark:border-blue-700 ml-1">{favorites.length}</span>
         </button>
         <button
-          className={`px-4 py-2 rounded font-semibold transition-colors ${section === 'discover' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+          className={`px-4 py-2 rounded-sm font-semibold transition-colors ${section === 'discover' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
           onClick={() => handleSectionChange('discover')}
         >
           Discover

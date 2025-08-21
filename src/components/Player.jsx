@@ -688,7 +688,7 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
           {/* Volume and Mute moved to persistent footer */}
 
           {/* EQ Preset, Reset, Proxy, Sliders */}
-          <div className="flex flex-col gap-2 bg-white/30 dark:bg-black/30 backdrop-blur rounded-lg px-3 py-2">
+          <div className="flex flex-col gap-2 bg-white/30 dark:bg-black/30 backdrop-blur-sm rounded-lg px-3 py-2">
             <div className="flex items-center gap-2 w-full">
               <label className="text-xs font-medium whitespace-nowrap mr-1">EQ Preset</label>
               <div style={{ minWidth: 140 }}>
@@ -707,14 +707,14 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
               </div>
               <button
                 onClick={() => applyPreset('Flat')}
-                className="ml-2 px-2 py-1 rounded-lg bg-blue-600 text-white text-xs font-semibold shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                className="ml-2 px-2 py-1 rounded-lg bg-blue-600 text-white text-xs font-semibold shadow-sm hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-400 transition"
                 title="Reset EQ to Flat"
               >
                 Reset
               </button>
               <button
                 onClick={saveCustomPreset}
-                className="ml-2 px-2 py-1 rounded-lg bg-green-600 text-white text-xs font-semibold shadow hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 transition"
+                className="ml-2 px-2 py-1 rounded-lg bg-green-600 text-white text-xs font-semibold shadow-sm hover:bg-green-700 focus:outline-hidden focus:ring-2 focus:ring-green-400 transition"
                 title="Save as Custom Preset"
               >
                 Save
@@ -742,7 +742,7 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
           <div className="font-semibold text-sm mb-2 opacity-80">Recently Played</div>
           <ul className="space-y-1">
             {recentlyPlayed.map(st => (
-              <li key={st.stationuuid} className="flex items-center gap-2 px-2 py-1 rounded-lg bg-white/20 dark:bg-black/20 backdrop-blur-sm hover:bg-white/30 dark:hover:bg-black/30 transition cursor-pointer"
+              <li key={st.stationuuid} className="flex items-center gap-2 px-2 py-1 rounded-lg bg-white/20 dark:bg-black/20 backdrop-blur-xs hover:bg-white/30 dark:hover:bg-black/30 transition cursor-pointer"
                   onClick={() => st.stationuuid !== station?.stationuuid && st.name && onClose ? onClose() || setTimeout(() => window.dispatchEvent(new CustomEvent('select-station', { detail: st })), 0) : undefined}>
                 <span className="truncate flex-1" title={st.name}>{st.name}</span>
                 <span className="text-xs text-gray-400">{st.country}</span>
