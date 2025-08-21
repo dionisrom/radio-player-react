@@ -87,7 +87,16 @@ export default function FooterPlayer({ station, isFavorite, playerControls = nul
 
   // FooterPlayer no longer manages metadata subscription; App owns nowPlaying and passes it here.
 
-  const handlePlay = () => playerControls && playerControls.play && playerControls.play()
+  const handlePlay = async () => {
+    // iOS/Safari fix: resume AudioContext on user gesture
+    if (playerControls && typeof playerControls.getAudioContext === 'function') {
+      const ctx = playerControls.getAudioContext();
+      if (ctx && ctx.state === 'suspended') {
+        try { await ctx.resume(); } catch (e) { /* ignore */ }
+      }
+    }
+    if (playerControls && playerControls.play) await playerControls.play();
+  }
   const handlePause = () => playerControls && playerControls.pause && playerControls.pause()
   const handleStop = () => playerControls && playerControls.stop && playerControls.stop()
   const handleToggleFav = () => toggleFavorite && station && toggleFavorite(station)
@@ -101,6 +110,13 @@ export default function FooterPlayer({ station, isFavorite, playerControls = nul
         await playerControls.pause();
         setPlayingState(false);
       } else {
+        // iOS/Safari fix: resume AudioContext on user gesture
+        if (typeof playerControls.getAudioContext === 'function') {
+          const ctx = playerControls.getAudioContext();
+          if (ctx && ctx.state === 'suspended') {
+            try { await ctx.resume(); } catch (e) { /* ignore */ }
+          }
+        }
         await playerControls.play();
         setPlayingState(true);
       }
