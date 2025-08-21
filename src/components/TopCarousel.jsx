@@ -1,13 +1,19 @@
-// Enable drag-to-scroll for carousels on desktop
+import React, { useState, useEffect, useRef } from 'react';
+import { fetchTopVoted } from '../utils/radiobrowser';
+import { isMobile } from '../utils/deviceDetection';
+import StationCardCarousel from './StationCardCarousel';
+
+// Enable drag-to-scroll for carousels on mobile devices
 function useDragScroll(ref) {
   React.useEffect(() => {
+    if (!isMobile()) return;
     const el = ref.current;
     if (!el) return;
     let isDown = false;
     let startX;
     let scrollLeft;
     const onPointerDown = (e) => {
-      if (e.pointerType === 'mouse' || e.pointerType === 'pen') {
+      if (e.pointerType === 'mouse' || e.pointerType === 'pen' || e.pointerType === 'touch') {
         isDown = true;
         el.classList.add('dragging');
         startX = e.pageX - el.offsetLeft;
@@ -39,7 +45,7 @@ function useDragScroll(ref) {
     };
   }, [ref]);
 }
-import React, { useState, useEffect, useRef } from 'react';
+
 // Arrow SVG
 const Arrow = ({ direction = 'left', ...props }) => (
   <svg width="32" height="32" viewBox="0 0 32 32" fill="none" {...props}>
@@ -47,19 +53,10 @@ const Arrow = ({ direction = 'left', ...props }) => (
     <path d={direction === 'left' ? 'M19 24l-8-8 8-8' : 'M13 8l8 8-8 8'} stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
-import { fetchTopVoted } from '../utils/radiobrowser';
-import { isMobile } from '../utils/deviceDetection';
-import StationCardCarousel from './StationCardCarousel';
 
 function FavoritesCarousel({ favorites, onSelectStation, toggleFavorite }) {
   const containerRef = useRef(null);
-  // Only enable drag-to-scroll on mobile
-  useEffect(() => {
-    if (isMobile()) {
-      useDragScroll(containerRef);
-    }
-    // eslint-disable-next-line
-  }, []);
+  useDragScroll(containerRef);
   const [showLeft, setShowLeft] = useState(false);
   const [showRight, setShowRight] = useState(false);
 
@@ -161,13 +158,7 @@ function TopCarousel({ favorites, onSelectStation, toggleFavorite, component }) 
   // Discover carousel: mirrors FavoritesCarousel but fetches trending stations
   function DiscoverCarousel({ onSelectStation, favorites, toggleFavorite }) {
     const containerRef = useRef(null);
-    // Only enable drag-to-scroll on mobile
-    useEffect(() => {
-      if (isMobile()) {
-        useDragScroll(containerRef);
-      }
-      // eslint-disable-next-line
-    }, []);
+  useDragScroll(containerRef);
     const [stations, setStations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showLeft, setShowLeft] = useState(false);
