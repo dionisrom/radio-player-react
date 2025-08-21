@@ -176,10 +176,13 @@ export default function FooterPlayer({ station, isFavorite, playerControls = nul
                 setLongPressActive(true);
                 if (longPressTimer.current) clearTimeout(longPressTimer.current);
                 longPressTimer.current = setTimeout(() => {
-                  longPressTriggered.current = true;
-                  setShowVolumePopover(true);
-                  // short haptic feedback when long-press activates (if available)
-                  if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10);
+                  // Only trigger if pointer is still down (button is pressed)
+                  if (volumeButtonRef.current && document.activeElement === volumeButtonRef.current) {
+                    longPressTriggered.current = true;
+                    setShowVolumePopover(true);
+                    // short haptic feedback when long-press activates (if available)
+                    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10);
+                  }
                 }, LONG_PRESS_MS);
               }}
               onPointerUp={(e) => {
@@ -253,8 +256,6 @@ export default function FooterPlayer({ station, isFavorite, playerControls = nul
             <div className="sm:hidden relative">
               {showVolumePopover && (
                 <div id="volume-popover" ref={popoverRef} role="dialog" aria-label="Volume" className="absolute bottom-12 right-0 z-50 p-1 bg-white/90 dark:bg-gray-800/90 rounded-md shadow-lg backdrop-blur-md border border-white/20 w-14">
-                  {/* small diamond arrow pointing to the trigger */}
-                  <div className="absolute -top-2 right-3 w-3 h-3 transform rotate-45 bg-white/90 dark:bg-gray-800/90 border border-white/20" aria-hidden />
                   <div className="flex items-center justify-center py-1">
                     <input
                       type="range"
@@ -267,10 +268,10 @@ export default function FooterPlayer({ station, isFavorite, playerControls = nul
                       title="Adjust volume"
                       className="accent-blue-500"
                       style={{
-                        WebkitAppearance: 'slider-vertical',
+                        writingMode: 'vertical-lr',
+                        direction: 'rtl',
                         width: '8px',
                         height: '110px',
-                        writingMode: 'bt-lr',
                         display: 'block',
                       }}
                     />
