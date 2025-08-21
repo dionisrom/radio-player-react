@@ -41,11 +41,15 @@ module.exports = (req, res) => {
 
     const proxyReq = client.request(urlObj, options, (proxyRes) => {
       // Copy status and headers
-      res.writeHead(proxyRes.statusCode || 200, {
+      // Prepare headers, only set content-length if present
+      const headers = {
         'content-type': proxyRes.headers['content-type'] || 'application/octet-stream',
         'accept-ranges': proxyRes.headers['accept-ranges'] || 'bytes',
-        'content-length': proxyRes.headers['content-length'] || undefined,
-      });
+      };
+      if (proxyRes.headers['content-length'] !== undefined) {
+        headers['content-length'] = proxyRes.headers['content-length'];
+      }
+      res.writeHead(proxyRes.statusCode || 200, headers);
       // Pipe upstream response to the client and ensure we clean up if the
       // client disconnects so upstream connections don't remain open.
       proxyRes.pipe(res, { end: true });
