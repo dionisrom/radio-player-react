@@ -1,114 +1,62 @@
+// Enable drag-to-scroll for carousels on desktop
+function useDragScroll(ref) {
+  React.useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+    const onPointerDown = (e) => {
+      if (e.pointerType === 'mouse' || e.pointerType === 'pen') {
+        isDown = true;
+        el.classList.add('dragging');
+        startX = e.pageX - el.offsetLeft;
+        scrollLeft = el.scrollLeft;
+        el.setPointerCapture(e.pointerId);
+      }
+    };
+    const onPointerMove = (e) => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - el.offsetLeft;
+      const walk = x - startX;
+      el.scrollLeft = scrollLeft - walk;
+    };
+    const onPointerUp = (e) => {
+      isDown = false;
+      el.classList.remove('dragging');
+      el.releasePointerCapture(e.pointerId);
+    };
+    el.addEventListener('pointerdown', onPointerDown);
+    el.addEventListener('pointermove', onPointerMove);
+    el.addEventListener('pointerup', onPointerUp);
+    el.addEventListener('pointerleave', onPointerUp);
+    return () => {
+      el.removeEventListener('pointerdown', onPointerDown);
+      el.removeEventListener('pointermove', onPointerMove);
+      el.removeEventListener('pointerup', onPointerUp);
+      el.removeEventListener('pointerleave', onPointerUp);
+    };
+  }, [ref]);
+}
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchTopVoted } from '../utils/radiobrowser';
 import StationCardCarousel from './StationCardCarousel';
 
 function FavoritesCarousel({ favorites, onSelectStation, toggleFavorite }) {
-  const [start, setStart] = useState(0);
-  const [perPage, setPerPage] = useState(5);
-  const end = start + perPage;
-  const maxStart = Math.max(0, favorites.length - perPage);
-  const canPrev = start > 0;
-  const canNext = start < maxStart;
+  // Remove paging logic for free scroll
   const containerRef = useRef(null);
+  useDragScroll(containerRef);
 
-  // recompute perPage based on container width and item width
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const recompute = () => {
-      const cw = container.clientWidth || container.getBoundingClientRect().width || 0;
-      const first = container.children?.[0];
-      if (!first) {
-        setPerPage(1);
-        return;
-      }
-      const itemWidth = first.getBoundingClientRect().width || 0;
-      const style = window.getComputedStyle(container);
-      const gap = parseFloat(style.gap) || 16;
-      const newPerPage = Math.max(1, Math.floor(cw / (itemWidth + gap)));
-      setPerPage(prev => prev === newPerPage ? prev : newPerPage);
-    };
-
-    recompute();
-    const ro = new ResizeObserver(recompute);
-    ro.observe(container);
-    window.addEventListener('resize', recompute);
-    return () => { ro.disconnect(); window.removeEventListener('resize', recompute); };
-  }, [favorites.length]);
-
-  // clamp and align start when favorites or perPage change
-  useEffect(() => {
-    const newMax = Math.max(0, favorites.length - perPage);
-    setStart(s => Math.min(newMax, Math.floor(s / Math.max(1, perPage)) * perPage));
-  }, [favorites.length, perPage]);
-
-  // scroll the carousel so the active window is visible
-  useEffect(() => {
-    try {
-      const container = containerRef.current;
-      const child = container?.children?.[start];
-      if (child && typeof child.scrollIntoView === 'function') {
-        child.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
-      }
-    } catch (err) {
-      // ignore scrolling errors
-    }
-  }, [start]);
-
-  // Sync start when user manually scrolls (debounced)
-  const scrollTimeoutRef = useRef(null);
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const onScroll = () => {
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-      scrollTimeoutRef.current = setTimeout(() => {
-        const pageWidth = container.clientWidth || container.offsetWidth || 1;
-        const pageNum = Math.round((container.scrollLeft || 0) / pageWidth);
-        setStart(prev => Math.min(maxStart, pageNum * perPage));
-      }, 120);
-    };
-    container.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      container.removeEventListener('scroll', onScroll);
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-    };
-  }, [perPage, maxStart]);
+  // No paging logic needed for free scroll
 
   return (
     <div className="relative">
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-xl font-bold">Favorite Radios</h2>
-        <div>
-          <button
-            onClick={() => {
-              const container = containerRef.current;
-              if (container) {
-                const pageWidth = container.clientWidth || container.offsetWidth || 0;
-                container.scrollBy({ left: -pageWidth, behavior: 'smooth' });
-              }
-              setStart(s => Math.max(0, s - perPage));
-            }}
-            disabled={!canPrev}
-            className="px-2 py-1 mx-1 rounded bg-gray-200 dark:bg-gray-700 disabled:opacity-50"
-          >&#8592;</button>
-          <button
-            onClick={() => {
-              const container = containerRef.current;
-              if (container) {
-                const pageWidth = container.clientWidth || container.offsetWidth || 0;
-                container.scrollBy({ left: pageWidth, behavior: 'smooth' });
-              }
-              setStart(s => Math.min(maxStart, s + perPage));
-            }}
-            disabled={!canNext}
-            className="px-2 py-1 mx-1 rounded bg-gray-200 dark:bg-gray-700 disabled:opacity-50"
-          >&#8594;</button>
-        </div>
       </div>
-  <div ref={containerRef} className="flex gap-4 overflow-x-auto hide-scrollbar overflow-y-hidden pb-2">
-        {favorites.slice(start, end).map(station => (
+  <div ref={containerRef} className="flex gap-4 overflow-x-auto hide-scrollbar overflow-y-hidden pb-2 cursor-grab">
+        {favorites.map(station => (
           <StationCardCarousel
             key={station.stationuuid}
             station={station}
@@ -135,12 +83,11 @@ function TopCarousel({ favorites, onSelectStation, toggleFavorite, component }) 
 
   // Discover carousel: mirrors FavoritesCarousel but fetches trending stations
   function DiscoverCarousel({ onSelectStation, favorites, toggleFavorite }) {
-    const [start, setStart] = useState(0);
-    const [perPage, setPerPage] = useState(5);
-    const end = start + perPage;
-    const [stations, setStations] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const containerRef = useRef(null);
+  // Remove paging logic for free scroll
+  const containerRef = useRef(null);
+  useDragScroll(containerRef);
+  const [stations, setStations] = useState([]);
+  const [loading, setLoading] = useState(true);
 
     useEffect(() => {
       let isMounted = true;
@@ -159,83 +106,20 @@ function TopCarousel({ favorites, onSelectStation, toggleFavorite, component }) 
       return () => { isMounted = false };
     }, []);
 
-    const maxStart = Math.max(0, stations.length - perPage);
-    const canPrev = start > 0;
-    const canNext = start < maxStart;
+  // No paging logic needed for free scroll
 
-    useEffect(() => {
-      const container = containerRef.current;
-      if (!container) return;
-
-      const recompute = () => {
-        const cw = container.clientWidth || container.getBoundingClientRect().width || 0;
-        const first = container.children?.[0];
-        if (!first) {
-          setPerPage(1);
-          return;
-        }
-        const itemWidth = first.getBoundingClientRect().width || 0;
-        const style = window.getComputedStyle(container);
-        const gap = parseFloat(style.gap) || 16;
-        const newPerPage = Math.max(1, Math.floor(cw / (itemWidth + gap)));
-        setPerPage(prev => prev === newPerPage ? prev : newPerPage);
-      };
-
-      recompute();
-      const ro = new ResizeObserver(recompute);
-      ro.observe(container);
-      window.addEventListener('resize', recompute);
-      return () => { ro.disconnect(); window.removeEventListener('resize', recompute); };
-    }, [stations.length]);
-
-    useEffect(() => {
-      const newMax = Math.max(0, stations.length - perPage);
-      setStart(s => Math.min(newMax, Math.floor(s / Math.max(1, perPage)) * perPage));
-    }, [stations.length, perPage]);
-
-    useEffect(() => {
-      try {
-        const container = containerRef.current;
-        const child = container?.children?.[start];
-        if (child && typeof child.scrollIntoView === 'function') {
-          child.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
-        }
-      } catch (err) {}
-    }, [start]);
-
-    const scrollTimeoutRef2 = useRef(null);
-    useEffect(() => {
-      const container = containerRef.current;
-      if (!container) return;
-      const onScroll = () => {
-        if (scrollTimeoutRef2.current) clearTimeout(scrollTimeoutRef2.current);
-        scrollTimeoutRef2.current = setTimeout(() => {
-          const pageWidth = container.clientWidth || container.offsetWidth || 1;
-          const pageNum = Math.round((container.scrollLeft || 0) / pageWidth);
-          setStart(prev => Math.min(maxStart, pageNum * perPage));
-        }, 120);
-      };
-      container.addEventListener('scroll', onScroll, { passive: true });
-      return () => {
-        container.removeEventListener('scroll', onScroll);
-        if (scrollTimeoutRef2.current) clearTimeout(scrollTimeoutRef2.current);
-      };
-    }, [perPage, maxStart]);
+  // No paging logic needed for free scroll
 
     return (
       <div className="relative">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-xl font-bold">Discover</h2>
-          <div>
-            <button onClick={() => setStart(s => Math.max(0, s - perPage))} disabled={!canPrev} className="px-2 py-1 mx-1 rounded bg-gray-200 dark:bg-gray-700 disabled:opacity-50">&#8592;</button>
-            <button onClick={() => setStart(s => Math.min(maxStart, s + perPage))} disabled={!canNext} className="px-2 py-1 mx-1 rounded bg-gray-200 dark:bg-gray-700 disabled:opacity-50">&#8594;</button>
-          </div>
         </div>
-        <div ref={containerRef} className="flex gap-4 overflow-x-auto hide-scrollbar overflow-y-hidden pb-2">
+  <div ref={containerRef} className="flex gap-4 overflow-x-auto hide-scrollbar overflow-y-hidden pb-2 cursor-grab">
           {loading ? (
             <div className="text-gray-500">Loading...</div>
           ) : (
-            stations.slice(start, end).map(station => (
+            stations.map(station => (
               <StationCardCarousel
                 key={station.stationuuid}
                 station={station}
