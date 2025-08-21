@@ -56,23 +56,6 @@ function getPresets() {
 }
 
 export default function Player({ station, onClose, toggleFavorite, isFavorite, setVisBg, setAnalyserRef, setAudioCtxFromApp, recentlyPlayed = [], registerControls = null, setPlayingOnApp = null, setNowPlaying = null, onStreamError = null, theme = 'dark' }) {
-  // Expose getAudioContext for FooterPlayer to resume on user gesture (iOS fix)
-  React.useEffect(() => {
-    if (registerControls) {
-      registerControls({
-        play: handlePlay,
-        pause: handlePause,
-        stop: handleStop,
-        getPlaying: () => playing,
-        setVolume: setVolume,
-        getVolume: () => volume,
-        setMuted: setMuted,
-        getMuted: () => muted,
-        getAudioContext: () => audioCtx,
-      });
-    }
-    // eslint-disable-next-line
-  }, [registerControls, handlePlay, handlePause, handleStop, playing, volume, muted, audioCtx]);
   const audioRef = useRef(null);
   const [audioCtx, setAudioCtx] = useState(null);
   const sourceRef = useRef(null);
@@ -685,11 +668,12 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
   getPlaying: () => playingRef.current,
       getVolume: () => volumeRef.current,
       getMuted: () => mutedRef.current,
+    getAudioContext: () => audioCtx,
     };
     registerControls(controls);
     return () => registerControls(null);
     // only re-register if the registration callback identity changes
-  }, [registerControls]);
+  }, [registerControls, audioCtx]);
 
 
 
