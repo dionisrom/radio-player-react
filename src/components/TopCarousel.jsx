@@ -40,31 +40,95 @@ function useDragScroll(ref) {
   }, [ref]);
 }
 import React, { useState, useEffect, useRef } from 'react';
+// Arrow SVG
+const Arrow = ({ direction = 'left', ...props }) => (
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" {...props}>
+    <circle cx="16" cy="16" r="16" fill="rgba(30,30,40,0.35)" />
+    <path d={direction === 'left' ? 'M19 24l-8-8 8-8' : 'M13 8l8 8-8 8'} stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
 import { fetchTopVoted } from '../utils/radiobrowser';
 import StationCardCarousel from './StationCardCarousel';
 
 function FavoritesCarousel({ favorites, onSelectStation, toggleFavorite }) {
-  // Remove paging logic for free scroll
   const containerRef = useRef(null);
   useDragScroll(containerRef);
+  const [showLeft, setShowLeft] = useState(false);
+  const [showRight, setShowRight] = useState(false);
 
-  // No paging logic needed for free scroll
+  // Check scroll position to show/hide arrows
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => {
+      setShowLeft(el.scrollLeft > 5);
+      setShowRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 5);
+    };
+    update();
+    el.addEventListener('scroll', update);
+    window.addEventListener('resize', update);
+    return () => {
+      el.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [favorites.length]);
+
+  const scrollBy = (amount) => {
+    const el = containerRef.current;
+    if (el) el.scrollBy({ left: amount, behavior: 'smooth' });
+  };
 
   return (
     <div className="relative">
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-xl font-bold">Favorite Radios</h2>
       </div>
-  <div ref={containerRef} className="flex gap-4 overflow-x-auto hide-scrollbar overflow-y-hidden pb-2 cursor-grab">
-        {favorites.map(station => (
-          <StationCardCarousel
-            key={station.stationuuid}
-            station={station}
-            onPlay={() => onSelectStation(station)}
-            isFav={true}
-            onToggleFav={() => toggleFavorite(station)}
-          />
-        ))}
+      <div className="relative flex items-stretch">
+        {/* Left Arrow Glass Container */}
+        {showLeft && (
+          <div className="absolute left-0 top-0 bottom-0 flex items-center z-20" style={{height: '100%', width: 48, margin: 0, padding: 0}}>
+            <div className="glass flex items-center justify-center h-full w-full rounded-l-lg" style={{background: 'rgba(255,255,255,0.45)', backdropFilter: 'blur(8px) saturate(120%)'}}>
+              <button
+                className="p-1 rounded-full focus:outline-none"
+                style={{ pointerEvents: 'auto' }}
+                onClick={() => scrollBy(-220)}
+                aria-label="Scroll left"
+              >
+                <Arrow direction="left" />
+              </button>
+            </div>
+          </div>
+        )}
+        {/* Right Arrow Glass Container */}
+        {showRight && (
+          <div className="absolute right-0 top-0 bottom-0 flex items-center z-20" style={{height: '100%', width: 48, margin: 0, padding: 0}}>
+            <div className="glass flex items-center justify-center h-full w-full rounded-r-lg" style={{background: 'rgba(255,255,255,0.45)', backdropFilter: 'blur(8px) saturate(120%)'}}>
+              <button
+                className="p-1 rounded-full focus:outline-none"
+                style={{ pointerEvents: 'auto' }}
+                onClick={() => scrollBy(220)}
+                aria-label="Scroll right"
+              >
+                <Arrow direction="right" />
+              </button>
+            </div>
+          </div>
+        )}
+        <div
+          ref={containerRef}
+          className="flex gap-4 overflow-x-auto hide-scrollbar overflow-y-hidden pb-2 cursor-grab w-full"
+          style={{ scrollBehavior: 'smooth' }}
+        >
+          {favorites.map(station => (
+            <StationCardCarousel
+              key={station.stationuuid}
+              station={station}
+              onPlay={() => onSelectStation(station)}
+              isFav={true}
+              onToggleFav={() => toggleFavorite(station)}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -83,11 +147,12 @@ function TopCarousel({ favorites, onSelectStation, toggleFavorite, component }) 
 
   // Discover carousel: mirrors FavoritesCarousel but fetches trending stations
   function DiscoverCarousel({ onSelectStation, favorites, toggleFavorite }) {
-  // Remove paging logic for free scroll
-  const containerRef = useRef(null);
-  useDragScroll(containerRef);
-  const [stations, setStations] = useState([]);
-  const [loading, setLoading] = useState(true);
+    const containerRef = useRef(null);
+    useDragScroll(containerRef);
+    const [stations, setStations] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [showLeft, setShowLeft] = useState(false);
+    const [showRight, setShowRight] = useState(false);
 
     useEffect(() => {
       let isMounted = true;
@@ -106,29 +171,82 @@ function TopCarousel({ favorites, onSelectStation, toggleFavorite, component }) 
       return () => { isMounted = false };
     }, []);
 
-  // No paging logic needed for free scroll
+    useEffect(() => {
+      const el = containerRef.current;
+      if (!el) return;
+      const update = () => {
+        setShowLeft(el.scrollLeft > 5);
+        setShowRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 5);
+      };
+      update();
+      el.addEventListener('scroll', update);
+      window.addEventListener('resize', update);
+      return () => {
+        el.removeEventListener('scroll', update);
+        window.removeEventListener('resize', update);
+      };
+    }, [stations.length]);
 
-  // No paging logic needed for free scroll
+    const scrollBy = (amount) => {
+      const el = containerRef.current;
+      if (el) el.scrollBy({ left: amount, behavior: 'smooth' });
+    };
 
     return (
       <div className="relative">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-xl font-bold">Discover</h2>
         </div>
-  <div ref={containerRef} className="flex gap-4 overflow-x-auto hide-scrollbar overflow-y-hidden pb-2 cursor-grab">
-          {loading ? (
-            <div className="text-gray-500">Loading...</div>
-          ) : (
-            stations.map(station => (
-              <StationCardCarousel
-                key={station.stationuuid}
-                station={station}
-                onPlay={() => onSelectStation(station)}
-                isFav={!!favorites.find(f => f.stationuuid === station.stationuuid)}
-                onToggleFav={() => toggleFavorite(station)}
-              />
-            ))
+        <div className="relative flex items-stretch">
+          {/* Left Arrow Glass Container */}
+          {showLeft && (
+            <div className="absolute left-0 top-0 bottom-0 flex items-center z-20" style={{height: '100%', width: 48, margin: 0, padding: 0}}>
+              <div className="glass flex items-center justify-center h-full w-full rounded-l-lg" style={{background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(8px) saturate(120%)'}}>
+                <button
+                  className="p-1 rounded-full focus:outline-none"
+                  style={{ pointerEvents: 'auto' }}
+                  onClick={() => scrollBy(-220)}
+                  aria-label="Scroll left"
+                >
+                  <Arrow direction="left" />
+                </button>
+              </div>
+            </div>
           )}
+          {/* Right Arrow Glass Container */}
+          {showRight && (
+            <div className="absolute right-0 top-0 bottom-0 flex items-center z-20" style={{height: '100%', width: 48, margin: 0, padding: 0}}>
+              <div className="glass flex items-center justify-center h-full w-full rounded-r-lg" style={{background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(8px) saturate(120%)'}}>
+                <button
+                  className="p-1 rounded-full focus:outline-none"
+                  style={{ pointerEvents: 'auto' }}
+                  onClick={() => scrollBy(220)}
+                  aria-label="Scroll right"
+                >
+                  <Arrow direction="right" />
+                </button>
+              </div>
+            </div>
+          )}
+          <div
+            ref={containerRef}
+            className="flex gap-4 overflow-x-auto hide-scrollbar overflow-y-hidden pb-2 cursor-grab w-full"
+            style={{ scrollBehavior: 'smooth' }}
+          >
+            {loading ? (
+              <div className="text-gray-500">Loading...</div>
+            ) : (
+              stations.map(station => (
+                <StationCardCarousel
+                  key={station.stationuuid}
+                  station={station}
+                  onPlay={() => onSelectStation(station)}
+                  isFav={!!favorites.find(f => f.stationuuid === station.stationuuid)}
+                  onToggleFav={() => toggleFavorite(station)}
+                />
+              ))
+            )}
+          </div>
         </div>
       </div>
     );
@@ -140,7 +258,7 @@ function TopCarousel({ favorites, onSelectStation, toggleFavorite, component }) 
   };
 
   return (
-    <div className="mb-8 w-full max-w-full">
+    <div className="mb-8 w-full max-w-full relative">
       <div className="flex items-center gap-4 mb-4">
         <button
           className={`px-4 py-2 rounded font-semibold transition-colors flex items-center gap-2 ${section === 'favorites' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
