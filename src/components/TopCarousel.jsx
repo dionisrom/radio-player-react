@@ -48,11 +48,18 @@ const Arrow = ({ direction = 'left', ...props }) => (
   </svg>
 );
 import { fetchTopVoted } from '../utils/radiobrowser';
+import { isMobile } from '../utils/deviceDetection';
 import StationCardCarousel from './StationCardCarousel';
 
 function FavoritesCarousel({ favorites, onSelectStation, toggleFavorite }) {
   const containerRef = useRef(null);
-  useDragScroll(containerRef);
+  // Only enable drag-to-scroll on mobile
+  useEffect(() => {
+    if (isMobile()) {
+      useDragScroll(containerRef);
+    }
+    // eslint-disable-next-line
+  }, []);
   const [showLeft, setShowLeft] = useState(false);
   const [showRight, setShowRight] = useState(false);
 
@@ -73,9 +80,15 @@ function FavoritesCarousel({ favorites, onSelectStation, toggleFavorite }) {
     };
   }, [favorites.length]);
 
+  // On PC, scroll by a moderate amount for a more page-like effect
   const scrollBy = (amount) => {
     const el = containerRef.current;
-    if (el) el.scrollBy({ left: amount, behavior: 'smooth' });
+    if (!el) return;
+    let scrollAmount = amount;
+    if (!isMobile()) {
+      scrollAmount = amount > 0 ? el.clientWidth * 0.4 : -el.clientWidth * 0.4;
+    }
+    el.scrollBy({ left: scrollAmount, behavior: 'smooth' });
   };
 
   return (
@@ -148,7 +161,13 @@ function TopCarousel({ favorites, onSelectStation, toggleFavorite, component }) 
   // Discover carousel: mirrors FavoritesCarousel but fetches trending stations
   function DiscoverCarousel({ onSelectStation, favorites, toggleFavorite }) {
     const containerRef = useRef(null);
-    useDragScroll(containerRef);
+    // Only enable drag-to-scroll on mobile
+    useEffect(() => {
+      if (isMobile()) {
+        useDragScroll(containerRef);
+      }
+      // eslint-disable-next-line
+    }, []);
     const [stations, setStations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showLeft, setShowLeft] = useState(false);
@@ -187,9 +206,15 @@ function TopCarousel({ favorites, onSelectStation, toggleFavorite, component }) 
       };
     }, [stations.length]);
 
+    // On PC, scroll by a moderate amount for a more page-like effect
     const scrollBy = (amount) => {
       const el = containerRef.current;
-      if (el) el.scrollBy({ left: amount, behavior: 'smooth' });
+      if (!el) return;
+      let scrollAmount = amount;
+      if (!isMobile()) {
+        scrollAmount = amount > 0 ? el.clientWidth * 0.4 : -el.clientWidth * 0.4;
+      }
+      el.scrollBy({ left: scrollAmount, behavior: 'smooth' });
     };
 
     return (

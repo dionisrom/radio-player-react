@@ -1,4 +1,12 @@
 /**
+ * Detects if the user is on a mobile device (iOS or Android)
+ * @returns {boolean} True if mobile, false otherwise
+ */
+export const isMobile = () => {
+  if (typeof navigator === 'undefined') return false;
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+/**
  * Utility functions for device and browser detection
  */
 
