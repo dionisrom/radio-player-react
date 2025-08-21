@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react'
 import Header from './components/Header'
+import ErrorModal from './components/ErrorModal'
 import StationList from './components/StationList'
 import Player from './components/Player'
 import TopCarousel from './components/TopCarousel'
@@ -37,6 +38,8 @@ export default function App() {
   const [playerPlaying, setPlayerPlaying] = useState(false);
   const [nowPlaying, setNowPlaying] = useState('');
   const [streamError, setStreamError] = useState('');
+  const [errorModalMode, setErrorModalMode] = useState(loadLocal('errorModalMode', 'auto'));
+  useEffect(() => saveLocal('errorModalMode', errorModalMode), [errorModalMode]);
   const registerControls = React.useCallback((controls) => {
     setPlayerControls(prev => prev === controls ? prev : controls);
   }, []);
@@ -139,6 +142,14 @@ export default function App() {
   return (
     <div className="min-h-screen p-4 md:p-8 transition-colors relative">
 
+      {/* Error Modal Overlay (fixed, not in layout flow) */}
+      <ErrorModal
+        message={streamError}
+        onDismiss={() => setStreamError('')}
+        autoHide={errorModalMode === 'auto'}
+        duration={5000}
+      />
+
   {/* Header now contains the toggles, so remove fixed top-right toggles */}
 
 
@@ -154,9 +165,10 @@ export default function App() {
           visBg={visBg}
           setVisBg={setVisBg}
           nowPlaying={nowPlaying}
-          streamError={streamError}
           exportFavorites={exportFavorites}
           importFavorites={importFavorites}
+          errorModalMode={errorModalMode}
+          setErrorModalMode={setErrorModalMode}
         />
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr,420px] gap-6">
           <main

@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react'
-import { DotsVerticalIcon, ChevronDownIcon, DownloadIcon, UploadIcon } from './Icons'
+import { DotsVerticalIcon, ChevronDownIcon, DownloadIcon, UploadIcon, XIcon } from './Icons'
 
-export default function MoreMenu({ visBg, setVisBg, theme, setTheme, exportFavorites, importFavorites }) {
+export default function MoreMenu({ visBg, setVisBg, theme, setTheme, exportFavorites, importFavorites, errorModalMode = 'auto', setErrorModalMode }) {
   const [open, setOpen] = useState(false)
   const fileInputRef = useRef(null)
 
@@ -22,12 +22,14 @@ export default function MoreMenu({ visBg, setVisBg, theme, setTheme, exportFavor
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-56 bg-white/90 dark:bg-gray-800/90 glass backdrop-blur-md rounded-lg p-3 shadow-lg border border-white/20 z-50">
+  <div className="absolute right-0 mt-2 w-72 bg-white/90 dark:bg-gray-800/90 glass backdrop-blur-md rounded-lg p-3 shadow-lg border border-white/20 z-50">
           <div className="flex items-center justify-between mb-2">
             <span className="font-semibold text-sm">Settings</span>
-            <button className="text-xs text-gray-400" onClick={() => setOpen(false)}>Close</button>
+            <button className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1 rounded transition" onClick={() => setOpen(false)} title="Close">
+              <XIcon className="w-4 h-4" />
+            </button>
           </div>
-
+          <div className="border-b border-gray-300 dark:border-gray-700 mb-3"></div>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
@@ -54,6 +56,21 @@ export default function MoreMenu({ visBg, setVisBg, theme, setTheme, exportFavor
                   <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white dark:bg-gray-300 shadow-md transition-transform ${visBg ? 'translate-x-5' : ''}`}></div>
                 </div>
               </label>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium">Error Modal</div>
+                <div className="text-xs text-gray-400">How to dismiss stream errors</div>
+              </div>
+              <select
+                className="px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-sm"
+                value={errorModalMode}
+                onChange={e => setErrorModalMode && setErrorModalMode(e.target.value)}
+              >
+                <option value="auto">Auto-hide (5s)</option>
+                <option value="manual">Manual dismiss</option>
+              </select>
             </div>
 
             <div className="flex items-center justify-between">
