@@ -22,7 +22,7 @@ export default function MoreMenu({ visBg, setVisBg, theme, setTheme, exportFavor
       </button>
 
       {open && (
-  <div className="absolute right-0 mt-2 w-72 bg-white/90 dark:bg-gray-800/90 glass backdrop-blur-md rounded-lg p-3 shadow-lg border border-white/20 z-50">
+        <div className="absolute right-0 mt-2 w-72 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md backdrop-opacity-[.99] rounded-lg p-3 shadow-lg border  border-gray-300 dark:border-white/20 z-50">
           <div className="flex items-center justify-between mb-2">
             <span className="font-semibold text-sm">Settings</span>
             <button className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1 rounded-sm transition" onClick={() => setOpen(false)} title="Close">
@@ -39,7 +39,7 @@ export default function MoreMenu({ visBg, setVisBg, theme, setTheme, exportFavor
               <button
                 aria-label="Toggle dark mode"
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="px-3 py-1 rounded-sm bg-gray-100 dark:bg-gray-800 text-sm"
+                className="px-3 py-1 rounded-sm bg-gray-100 dark:bg-gray-800 text-sm border border-gray-300 dark:border-white/20"
               >
                 {theme === 'dark' ? 'Dark' : 'Light'}
               </button>
@@ -50,7 +50,7 @@ export default function MoreMenu({ visBg, setVisBg, theme, setTheme, exportFavor
                 <div className="text-sm font-medium">Visualization</div>
                 <div className="text-xs text-gray-400">Use visualization as background</div>
               </div>
-              <label className="inline-flex items-center cursor-pointer">
+              <label className="inline-flex items-center cursor-pointer ">
                 <input type="checkbox" className="sr-only" checked={!!visBg} onChange={e => setVisBg(e.target.checked)} />
                 <div className={`w-11 h-6 bg-gray-200 dark:bg-gray-700 rounded-full transition-all relative ${visBg ? 'ring-2 ring-cyan-400' : ''}`}>
                   <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white dark:bg-gray-300 shadow-md transition-transform ${visBg ? 'translate-x-5' : ''}`}></div>
@@ -64,7 +64,7 @@ export default function MoreMenu({ visBg, setVisBg, theme, setTheme, exportFavor
                 <div className="text-xs text-gray-400">How to dismiss stream errors</div>
               </div>
               <select
-                className="px-2 py-1 rounded-sm bg-gray-100 dark:bg-gray-800 text-sm"
+                className="px-2 py-1 rounded-sm bg-gray-100 dark:bg-gray-800 text-sm border border-gray-300 dark:border-white/20"
                 value={errorModalMode}
                 onChange={e => setErrorModalMode && setErrorModalMode(e.target.value)}
               >
