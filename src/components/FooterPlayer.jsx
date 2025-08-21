@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react'
 
-export default function FooterPlayer({ station, isFavorite, playerControls = null, toggleFavorite, playerPlaying = null, nowPlaying = '', longPressMs = 450 }) {
+export default function FooterPlayer({ station, isFavorite, playerControls = null, toggleFavorite, playerPlaying = null, nowPlaying = '', longPressMs = 450, streamError = '', clearStreamError = null }) {
   const [volume, setVolumeState] = useState(0.8);
   const [muted, setMutedState] = useState(false);
   const [playing, setPlayingState] = useState(false);
@@ -118,7 +118,7 @@ export default function FooterPlayer({ station, isFavorite, playerControls = nul
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-white/20 dark:border-black/20 backdrop-blur-md py-2 px-4">
+  <div className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-white/20 dark:border-black/20 backdrop-blur-md py-2 px-4">
       <div className="max-w-6xl mx-auto flex items-center gap-4">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className={`w-12 h-12 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-md flex items-center justify-center text-white font-bold text-sm transform transition-all duration-300 ${pulse ? 'scale-105 ring-4 ring-blue-400/40 shadow-lg' : ''}`}>FM</div>

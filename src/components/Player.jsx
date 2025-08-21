@@ -55,7 +55,7 @@ function getPresets() {
   return { ...BASE_PRESETS };
 }
 
-export default function Player({ station, onClose, toggleFavorite, isFavorite, setVisBg, setAnalyserRef, setAudioCtxFromApp, recentlyPlayed = [], registerControls = null, setPlayingOnApp = null, setNowPlaying = null, theme = 'dark' }) {
+export default function Player({ station, onClose, toggleFavorite, isFavorite, setVisBg, setAnalyserRef, setAudioCtxFromApp, recentlyPlayed = [], registerControls = null, setPlayingOnApp = null, setNowPlaying = null, onStreamError = null, theme = 'dark' }) {
   const audioRef = useRef(null);
   const [audioCtx, setAudioCtx] = useState(null);
   const sourceRef = useRef(null);
@@ -68,6 +68,7 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
   const [selectedPreset, setSelectedPreset] = useState(loadLocal('eq_preset', 'Flat'));
   const [presets, setPresets] = useState(getPresets());
   const [useProxy, setUseProxy] = useState(loadLocal('use_proxy', false));
+  const [streamError, setStreamError] = useState('');
   // Only vertical EQ sliders now
   const [audioKey, setAudioKey] = useState(0); // force remount audio element
   const hlsRef = useRef(null);
@@ -121,6 +122,11 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
     if (!audioRef.current) return;
     audioRef.current.muted = muted;
   }, [muted]);
+
+  // Notify parent about stream error changes
+  useEffect(() => {
+    if (typeof onStreamError === 'function') onStreamError(streamError || '');
+  }, [streamError, onStreamError]);
 
   useEffect(() => {
     if (!station) return;
@@ -228,6 +234,8 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
             }
             await audioRef.current.play();
             setPlaying(true);
+            // Clear any stream errors once playback succeeds
+            setStreamError('');
             if (setPlayingOnApp) setPlayingOnApp(true);
             // If the stream doesn't provide metadata immediately, show the station name
             try {
@@ -248,6 +256,16 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
               console.warn('The selected stream is not supported by your browser:', err.message || err);
             } else {
               console.warn('Error playing stream:', err);
+              // Surface a user-friendly message for play errors
+              try {
+                if (err && err.name === 'NotAllowedError') {
+                  setStreamError('Playback was blocked by the browser (autoplay policy). Please interact with the page and try again.');
+                } else if (err && err.name === 'NotSupportedError') {
+                  setStreamError('The selected stream format is not supported by your browser. Try another station or enable the proxy.');
+                } else {
+                  setStreamError(String(err && (err.message || err)) || 'Unknown playback error');
+                }
+              } catch (e) {}
             }
           }
         };
@@ -257,7 +275,7 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
   if (setNowPlaying) setNowPlaying('');
         console.error('Error initializing audio graph or playing stream:', err);
         if (err.name === 'NotSupportedError') {
-          alert('The selected stream is not supported by your browser. Please try another station.');
+          setStreamError('The selected stream is not supported by your browser. Please try another station or enable the proxy.');
         }
       }
     })();
@@ -363,6 +381,23 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
             }
           } catch (e) { console.warn('Error parsing HLS ID3 sample', e); }
         });
+        // Surface HLS errors to the user. For fatal errors, show a message and
+        // suggest enabling the proxy which often helps with CORS/network issues.
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          try {
+            console.warn('HLS error', data);
+            if (data && data.fatal) {
+              let message = 'HLS playback error.';
+              const t = data.type;
+              if (t === Hls.ErrorTypes.NETWORK_ERROR) message = 'Network error while fetching HLS segments (possible CORS or server unreachable).';
+              else if (t === Hls.ErrorTypes.MEDIA_ERROR) message = 'Media decoding error during HLS playback.';
+              else if (t === Hls.ErrorTypes.OTHER_ERROR) message = 'Playback error while handling the stream.';
+              setStreamError(message + (useProxy ? '' : ' Try enabling "Use proxy" to work around CORS or network issues.'));
+              setPlaying(false);
+              if (setPlayingOnApp) setPlayingOnApp(false);
+            }
+          } catch (e) { console.warn(e); }
+        });
       } catch (err) {
         console.warn('HLS setup failed', err);
       }
@@ -395,6 +430,55 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
       // will clear it when needed. This avoids brief overwrites when playback starts.
     };
   }, [station && (station.url_resolved || station.url)]);
+
+  // Attach audio element error listeners (CORS/network/media errors)
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+
+    const onError = () => {
+      try {
+        const me = el.error;
+        if (!me) {
+          setStreamError('Unknown audio playback error.');
+          return;
+        }
+        // Map media error codes to helpful messages
+        let msg = '';
+        switch (me.code) {
+          case me.MEDIA_ERR_ABORTED:
+            msg = 'Playback was aborted.';
+            break;
+          case me.MEDIA_ERR_NETWORK:
+            msg = 'Network error while fetching the stream (possible CORS or server unreachable).';
+            break;
+          case me.MEDIA_ERR_DECODE:
+            msg = 'Decoding error (corrupted stream or unsupported codecs).';
+            break;
+          case me.MEDIA_ERR_SRC_NOT_SUPPORTED:
+            msg = 'Stream not supported by your browser (CORS or unsupported format). Try enabling the proxy.';
+            break;
+          default:
+            msg = 'An unknown playback error occurred.';
+        }
+        setStreamError(msg + (useProxy ? '' : ' You can try enabling "Use proxy" to bypass CORS or network restrictions.'));
+        setPlaying(false);
+        if (setPlayingOnApp) setPlayingOnApp(false);
+        if (setNowPlaying) setNowPlaying('');
+      } catch (e) { console.warn('Error handling media error', e); }
+    };
+
+    const onPlaying = () => { setStreamError(''); };
+    const onStalled = () => { setStreamError('Stream stalled — network may be unreliable.'); };
+
+    el.addEventListener('error', onError);
+    el.addEventListener('playing', onPlaying);
+    el.addEventListener('stalled', onStalled);
+
+    return () => {
+      try { el.removeEventListener('error', onError); el.removeEventListener('playing', onPlaying); el.removeEventListener('stalled', onStalled); } catch (e) {}
+    };
+  }, [audioKey, station, useProxy]);
 
   const ensureAudioGraph = async () => {
     if (!audioRef.current) return;

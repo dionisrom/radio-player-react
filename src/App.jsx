@@ -37,6 +37,7 @@ export default function App() {
   const [playerControls, setPlayerControls] = useState(null);
   const [playerPlaying, setPlayerPlaying] = useState(false);
   const [nowPlaying, setNowPlaying] = useState('');
+  const [streamError, setStreamError] = useState('');
   const registerControls = React.useCallback((controls) => {
     setPlayerControls(prev => prev === controls ? prev : controls);
   }, []);
@@ -154,6 +155,7 @@ export default function App() {
           visBg={visBg}
           setVisBg={setVisBg}
           nowPlaying={nowPlaying}
+          streamError={streamError}
           exportFavorites={exportFavorites}
           importFavorites={importFavorites}
         />
@@ -193,6 +195,7 @@ export default function App() {
               registerControls={registerControls}
               setPlayingOnApp={setPlayerPlaying}
               setNowPlaying={setNowPlaying}
+              onStreamError={setStreamError}
               theme={theme}
             />
             {!visBg && (
@@ -210,6 +213,8 @@ export default function App() {
           playerPlaying={playerPlaying}
           toggleFavorite={toggleFavorite}
           nowPlaying={nowPlaying}
+          streamError={streamError}
+          clearStreamError={() => setStreamError('')}
         />
       </div>
     </div>
