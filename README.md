@@ -10,6 +10,19 @@ A modern, visually impressive web radio player built with React, Vite, and Tailw
 - **Powerful Player**: 12-band vertical EQ, animated visualization, custom EQ presets, and a toggle for visualization as a full-page background.
 - **CORS Proxy**: Option to stream via a built-in proxy to bypass CORS issues.
 - **Performance**: In-memory caching for all API calls and search results.
+- **iOS Safari Compatibility**: Automatic fallback visualization for iOS Safari's Web Audio API limitations.
+
+## Browser Compatibility
+
+### Audio Visualization
+
+The audio visualization feature works across all modern browsers, with special handling for iOS Safari:
+
+- **Desktop browsers (Chrome, Firefox, Safari, Edge)**: Full visualization with real audio frequency data
+- **Mobile browsers (Android Chrome, iOS Safari)**: 
+  - Android Chrome: Full visualization support
+  - iOS Safari: Due to Safari's CORS restrictions with the Web Audio API on cross-origin audio streams, the app automatically provides a fallback visualization that simulates the audio visualization experience
+- **User Experience**: iOS users still get a beautiful animated visualization, with a subtle indicator that it's a simulated version due to browser limitations
 
 ## Getting Started
 
