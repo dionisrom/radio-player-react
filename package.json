@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "dashjs": "^5.0.3",
     "framer-motion": "^12.23.12",
     "hls.js": "^1.6.10",
     "icy": "^2.1.0",
