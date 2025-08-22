@@ -1,6 +1,9 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react'
 import Header from './components/Header'
+import Modal from './components/Modal'
+import EQ from './components/EQ'
+import Select from 'react-select';
 import ErrorModal from './components/ErrorModal'
 import StationList from './components/StationList'
 import Player from './components/Player'
@@ -12,6 +15,8 @@ import FooterPlayer from './components/FooterPlayer'
 // ...existing code...
 
 export default function App() {
+  const [showEQ, setShowEQ] = useState(false);
+  const [eqProps, setEQProps] = useState(null);
   function loadLocal(key, fallback) {
     try {
       const raw = localStorage.getItem(key)
@@ -160,16 +165,59 @@ export default function App() {
 
       <div className="w-full max-w-none mx-auto relative z-10">
   <Header
-          theme={theme}
-          setTheme={setTheme}
-          visBg={visBg}
-          setVisBg={setVisBg}
-          nowPlaying={nowPlaying}
-          exportFavorites={exportFavorites}
-          importFavorites={importFavorites}
-          errorModalMode={errorModalMode}
-          setErrorModalMode={setErrorModalMode}
-        />
+    theme={theme}
+    setTheme={setTheme}
+    visBg={visBg}
+    setVisBg={setVisBg}
+    nowPlaying={nowPlaying}
+    exportFavorites={exportFavorites}
+    importFavorites={importFavorites}
+    errorModalMode={errorModalMode}
+    setErrorModalMode={setErrorModalMode}
+    eqProps={eqProps}
+    setShowEQ={setShowEQ}
+  />
+      {/* EQ Modal rendered at root level */}
+      <Modal open={showEQ} onClose={() => setShowEQ(false)} title="Equalizer">
+        {eqProps && (
+          <>
+            <div className="mb-4">
+              <div className="flex flex-row items-center gap-2 flex-wrap">
+                <label className="text-sm font-medium whitespace-nowrap mr-1 block mb-1">EQ Preset</label>
+                <div className="min-w-[140px] flex-1">
+                  <Select
+                    value={{ value: eqProps.selectedPreset, label: eqProps.selectedPreset }}
+                    onChange={opt => eqProps.applyPreset(opt ? opt.value : 'Flat')}
+                    options={Object.keys(eqProps.presets).map(k => ({ value: k, label: k }))}
+                    styles={eqProps.selectStyles ? eqProps.selectStyles(eqProps.theme) : {}}
+                    isSearchable={false}
+                    menuPlacement="auto"
+                    closeMenuOnSelect={true}
+                    className="react-select-container"
+                    classNamePrefix="select"
+                    menuPortalTarget={typeof window !== 'undefined' ? window.document.body : undefined}
+                  />
+                </div>
+                <button
+                  onClick={() => eqProps.applyPreset('Flat')}
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold shadow-sm hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-400 transition"
+                  title="Reset EQ to Flat"
+                >
+                  Reset
+                </button>
+                <button
+                  onClick={eqProps.saveCustomPreset}
+                  className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold shadow-sm hover:bg-green-700 focus:outline-hidden focus:ring-2 focus:ring-green-400 transition"
+                  title="Save as Custom Preset"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+            <EQ freqs={eqProps.freqs} gains={eqProps.gains} setBandGain={eqProps.setBandGain} />
+          </>
+        )}
+      </Modal>
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6">
           <main
             className={`space-y-4 rounded-2xl p-2 md:p-16 pb-16 transition-all min-w-0 ${visBg ? 'backdrop-blur-lg bg-white/30 dark:bg-black/30 border border-white/20 dark:border-black/20 shadow-xl' : ''}`}
@@ -207,6 +255,7 @@ export default function App() {
               setNowPlaying={setNowPlaying}
               onStreamError={setStreamError}
               theme={theme}
+              registerEQProps={setEQProps}
             />
             {!visBg && (
               <Visualization analyser={analyserRef} audioCtx={audioCtx} visBg={visBg} setVisBg={setVisBg} />

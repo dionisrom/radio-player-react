@@ -1,7 +1,7 @@
-import React, { useRef, useState } from 'react'
-import { DotsVerticalIcon, ChevronDownIcon, DownloadIcon, UploadIcon, XIcon } from './Icons'
+import { useRef, useState } from 'react'
+import { DotsVerticalIcon, XIcon } from './Icons'
 
-export default function MoreMenu({ visBg, setVisBg, theme, setTheme, exportFavorites, importFavorites, errorModalMode = 'auto', setErrorModalMode }) {
+export default function MoreMenu({ visBg, setVisBg, theme, setTheme, exportFavorites, importFavorites, errorModalMode = 'auto', setErrorModalMode, eqProps, setShowEQ }) {
   const [open, setOpen] = useState(false)
   const fileInputRef = useRef(null)
 
@@ -31,6 +31,14 @@ export default function MoreMenu({ visBg, setVisBg, theme, setTheme, exportFavor
           </div>
           <div className="border-b border-gray-300 dark:border-gray-700 mb-3"></div>
           <div className="space-y-3">
+            {/* Equalizer Button */}
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium">Equalizer</div>
+                <div className="text-xs text-gray-400">Adjust sound with 12-band EQ</div>
+              </div>
+              <button onClick={() => setShowEQ(true)} className="px-3 py-1 rounded-sm bg-cyan-600 text-white text-sm">Open</button>
+            </div>
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm font-medium">Theme</div>

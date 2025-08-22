@@ -1,7 +1,7 @@
 import React from 'react'
 import MoreMenu from './MoreMenu'
 
-export default function Header({ theme, setTheme, visBg, setVisBg, nowPlaying = '', exportFavorites, importFavorites, errorModalMode, setErrorModalMode }) {
+export default function Header({ theme, setTheme, visBg, setVisBg, nowPlaying = '', exportFavorites, importFavorites, errorModalMode, setErrorModalMode, eqProps, setShowEQ }) {
   return (
     <header className="sticky top-0 z-50 flex flex-col gap-2 px-4 py-2 rounded-2xl mb-6 shadow-xl glass backdrop-blur-lg bg-white/30 dark:bg-black/30 border border-white/20 dark:border-black/20">
   {/* Error message is now handled by ErrorModal overlay */}
@@ -30,6 +30,8 @@ export default function Header({ theme, setTheme, visBg, setVisBg, nowPlaying = 
           importFavorites={importFavorites}
           errorModalMode={errorModalMode}
           setErrorModalMode={setErrorModalMode}
+          eqProps={eqProps}
+          setShowEQ={setShowEQ}
         />
       </div>
   </div>

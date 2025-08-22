@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import EQ from './EQ';
+//import EQ from './EQ';
 import { PRESETS as BASE_PRESETS } from '../utils/presets';
-import Select from 'react-select';
+//import Select from 'react-select';
 import selectStyles from '../utils/selectStyles';
 
 import Hls from 'hls.js';
@@ -58,7 +58,7 @@ function getPresets() {
   return { ...BASE_PRESETS };
 }
 
-export default function Player({ station, onClose, toggleFavorite, isFavorite, setVisBg, setAnalyserRef, setAudioCtxFromApp, recentlyPlayed = [], registerControls = null, setPlayingOnApp = null, setNowPlaying = null, onStreamError = null, theme = 'dark' }) {
+export default function Player({ station, onClose, toggleFavorite, isFavorite, setVisBg, setAnalyserRef, setAudioCtxFromApp, recentlyPlayed = [], registerControls = null, setPlayingOnApp = null, setNowPlaying = null, onStreamError = null, theme = 'dark', registerEQProps = null }) {
   const audioRef = useRef(null);
   const [audioCtx, setAudioCtx] = useState(null);
   const sourceRef = useRef(null);
@@ -76,6 +76,29 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
   const [audioKey, setAudioKey] = useState(0); // force remount audio element
   const hlsRef = useRef(null);
   const dashRef = useRef(null);
+
+  // ...existing code for setBandGain, applyPreset, saveCustomPreset, etc...
+
+  // Expose EQ props for modal (must be after all relevant declarations)
+  React.useEffect(() => {
+    if (typeof registerEQProps === 'function') {
+      registerEQProps({
+        freqs: EQ_FREQS,
+        gains,
+        setBandGain,
+        selectedPreset,
+        applyPreset,
+        presets,
+        saveCustomPreset,
+        selectStyles,
+        theme
+      });
+    }
+    // Clean up on unmount
+    return () => {
+      if (typeof registerEQProps === 'function') registerEQProps(null);
+    };
+  }, [gains, selectedPreset, presets, theme]);
   const metaEsRef = useRef(null);
   const userStoppedRef = useRef(false);
 
@@ -702,61 +725,8 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
 
   return (
     <div>
-      {/* Primary controls moved to persistent footer; aside shows advanced controls only */}
-  {/* Visualization is now handled by App, not Player */}
 
-
-      <div className="mt-4">
-        <div className="flex flex-col gap-4">
-          {/* Volume and Mute moved to persistent footer */}
-
-          {/* EQ Preset, Reset, Proxy, Sliders */}
-          <div className="flex flex-col gap-2 bg-white/30 dark:bg-black/30 backdrop-blur-sm rounded-lg px-3 py-2">
-            <div className="flex items-center gap-2 w-full">
-              <label className="text-xs font-medium whitespace-nowrap mr-1">EQ Preset</label>
-              <div style={{ minWidth: 140 }}>
-                <Select
-                  value={{ value: selectedPreset, label: selectedPreset }}
-                  onChange={opt => applyPreset(opt ? opt.value : 'Flat')}
-                  options={Object.keys(presets).map(k => ({ value: k, label: k }))}
-                  styles={selectStyles(theme)}
-                  isSearchable={false}
-                  menuPlacement="auto"
-                  closeMenuOnSelect={true}
-                  className="react-select-container"
-                  classNamePrefix="select"
-                  menuPortalTarget={typeof window !== 'undefined' ? window.document.body : undefined}
-                />
-              </div>
-              <button
-                onClick={() => applyPreset('Flat')}
-                className="ml-2 px-2 py-1 rounded-lg bg-blue-600 text-white text-xs font-semibold shadow-sm hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-400 transition"
-                title="Reset EQ to Flat"
-              >
-                Reset
-              </button>
-              <button
-                onClick={saveCustomPreset}
-                className="ml-2 px-2 py-1 rounded-lg bg-green-600 text-white text-xs font-semibold shadow-sm hover:bg-green-700 focus:outline-hidden focus:ring-2 focus:ring-green-400 transition"
-                title="Save as Custom Preset"
-              >
-                Save
-              </button>
-            </div>
-            <div className="flex items-center gap-2 w-full">
-              <label className="text-xs font-medium">Use proxy</label>
-              <input type="checkbox" checked={useProxy} onChange={e => setUseProxy(e.target.checked)} className="accent-blue-500" />
-              {/* Sliders orientation removed, always vertical */}
-              <span className="text-xs text-gray-400 ml-auto">Range: -12 dB → +12 dB</span>
-            </div>
-          </div>
-
-          {/* EQ Sliders */}
-          <div className="mt-1">
-            <EQ freqs={EQ_FREQS} gains={gains} setBandGain={setBandGain} orientation="vertical" />
-          </div>
-        </div>
-      </div>
+  {/* EQ UI moved to MoreMenu modal */}
 
 
       {/* Recently Played List */}
