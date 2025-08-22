@@ -3,7 +3,10 @@ import EQ from './EQ';
 import { PRESETS as BASE_PRESETS } from '../utils/presets';
 import Select from 'react-select';
 import selectStyles from '../utils/selectStyles';
+
 import Hls from 'hls.js';
+// dash.js will be loaded dynamically only if needed
+let DashJS = null;
 
 const MAX_BIQUAD_FREQ = 24000;
 const EQ_FREQS = [5, 11, 25, 56, 125, 280, 626, 1399, 3129, 6998, 15650, 35000].map(f => Math.min(f, MAX_BIQUAD_FREQ));
@@ -72,6 +75,7 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
   // Only vertical EQ sliders now
   const [audioKey, setAudioKey] = useState(0); // force remount audio element
   const hlsRef = useRef(null);
+  const dashRef = useRef(null);
   const metaEsRef = useRef(null);
   const userStoppedRef = useRef(false);
 
@@ -142,13 +146,13 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
     setVolume(saved);
   }, [audioKey]);
 
+
   useEffect(() => {
-  if (!station || !audioRef.current) return;
+    if (!station || !audioRef.current) return;
 
     const url = station.url_resolved || station.url;
     let didCancel = false;
 
-    // --- OPTIMIZED CLEANUP AND AUDIO GRAPH SETUP ---
     (async () => {
       // --- CLEANUP PREVIOUS AUDIO GRAPH ---
       if (audioRef.current) {
@@ -174,15 +178,37 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
         try { await audioCtx.close(); } catch {}
         setAudioCtx(null);
       }
+      // --- MPEG-DASH SUPPORT ---
+      if (dashRef.current) {
+        try { dashRef.current.reset && dashRef.current.reset(); } catch {}
+        dashRef.current = null;
+      }
 
       // --- CREATE NEW AUDIO GRAPH ---
-  try {
+      try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         setAudioCtx(ctx);
         if (setAudioCtxFromApp) setAudioCtxFromApp(ctx);
 
-        audioRef.current.src = useProxy ? `/api/proxy?url=${encodeURIComponent(url)}` : url;
-        audioRef.current.crossOrigin = "anonymous";
+        // MPEG-DASH: .mpd extension
+        if (url.toLowerCase().includes('.mpd')) {
+          // Dynamically import dash.js only if needed
+          if (!DashJS) {
+            DashJS = (await import('./DashLoader')).default;
+          }
+          if (DashJS) {
+            audioRef.current.crossOrigin = 'anonymous';
+            dashRef.current = DashJS.MediaPlayer().create();
+            dashRef.current.initialize(audioRef.current, url, false);
+          } else {
+            setStreamError('DASH.js could not be loaded.');
+            return;
+          }
+        } else {
+          // HLS or regular audio
+          audioRef.current.src = useProxy ? `/api/proxy?url=${encodeURIComponent(url)}` : url;
+          audioRef.current.crossOrigin = "anonymous";
+        }
 
         // Only create one MediaElementSourceNode per audio element
         const source = ctx.createMediaElementSource(audioRef.current);
@@ -204,8 +230,8 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
         const analyser = ctx.createAnalyser();
         analyser.fftSize = 2048;
         prev.connect(analyser);
-  analyserRef.current = analyser;
-  if (setAnalyserRef) setAnalyserRef({ current: analyser });
+        analyserRef.current = analyser;
+        if (setAnalyserRef) setAnalyserRef({ current: analyser });
 
         const masterGain = ctx.createGain();
         masterGain.gain.value = 1;
@@ -218,7 +244,7 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
         });
 
         // Wait for the audio element to be ready, then play
-  audioRef.current.load();
+        audioRef.current.load();
         audioRef.current.oncanplay = async () => {
           if (didCancel) return;
           try {
@@ -227,20 +253,16 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
             }
             // If the user explicitly stopped playback recently, don't auto-play here.
             if (userStoppedRef.current) {
-              // keep playing state false and do not start playback
               setPlaying(false);
               if (setPlayingOnApp) setPlayingOnApp(false);
               return;
             }
             await audioRef.current.play();
             setPlaying(true);
-            // Clear any stream errors once playback succeeds
             setStreamError('');
             if (setPlayingOnApp) setPlayingOnApp(true);
-            // If the stream doesn't provide metadata immediately, show the station name
             try {
               if (setNowPlaying) {
-                // Only set fallback if there's no existing nowPlaying text
                 setNowPlaying(prev => (prev && prev.length > 0) ? prev : (station && (station.name || station.title || station.stationuuid) ? (station.name || station.title || station.stationuuid) : ''));
               }
             } catch (e) {}
@@ -248,15 +270,12 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
             setPlaying(false);
             if (setPlayingOnApp) setPlayingOnApp(false);
             if (setNowPlaying) setNowPlaying('');
-            // Autoplay/blocking errors are common on page load. Log as warnings and
-            // don't show alerts to avoid spamming the user.
             if (err && err.name === 'NotAllowedError') {
               console.warn('Autoplay blocked by browser policy:', err.message || err);
             } else if (err && err.name === 'NotSupportedError') {
               console.warn('The selected stream is not supported by your browser:', err.message || err);
             } else {
               console.warn('Error playing stream:', err);
-              // Surface a user-friendly message for play errors
               try {
                 if (err && err.name === 'NotAllowedError') {
                   setStreamError('Playback was blocked by the browser (autoplay policy). Please interact with the page and try again.');
@@ -269,10 +288,10 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
             }
           }
         };
-    } catch (err) {
-  setPlaying(false);
-  if (setPlayingOnApp) setPlayingOnApp(false);
-  if (setNowPlaying) setNowPlaying('');
+      } catch (err) {
+        setPlaying(false);
+        if (setPlayingOnApp) setPlayingOnApp(false);
+        if (setNowPlaying) setNowPlaying('');
         console.error('Error initializing audio graph or playing stream:', err);
         if (err.name === 'NotSupportedError') {
           setStreamError('The selected stream is not supported by your browser. Please try another station or enable the proxy.');
@@ -305,6 +324,10 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
       if (audioCtx && audioCtx.state !== 'closed') {
         audioCtx.close().catch(() => {});
         setAudioCtx(null);
+      }
+      if (dashRef.current) {
+        try { dashRef.current.reset && dashRef.current.reset(); } catch {}
+        dashRef.current = null;
       }
     };
   }, [audioKey]);
