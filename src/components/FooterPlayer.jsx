@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react'
 
-export default function FooterPlayer({ station, isFavorite, playerControls = null, toggleFavorite, playerPlaying = null, nowPlaying = '', longPressMs = 450, streamError = '', clearStreamError = null }) {
+export default function FooterPlayer({ station, isFavorite, playerControls = null, toggleFavorite, playerPlaying = null, nowPlaying = '', longPressMs = 450, streamError = '', clearStreamError = null, onStop = null }) {
   const [volume, setVolumeState] = useState(0.8);
   const [muted, setMutedState] = useState(false);
   const [playing, setPlayingState] = useState(false);
@@ -98,7 +98,10 @@ export default function FooterPlayer({ station, isFavorite, playerControls = nul
     if (playerControls && playerControls.play) await playerControls.play();
   }
   const handlePause = () => playerControls && playerControls.pause && playerControls.pause()
-  const handleStop = () => playerControls && playerControls.stop && playerControls.stop()
+  const handleStop = () => {
+    if (playerControls && playerControls.stop) playerControls.stop();
+    if (typeof onStop === 'function') onStop();
+  }
   const handleToggleFav = () => toggleFavorite && station && toggleFavorite(station)
 
   // Toggle play/pause and keep local playing state in sync

@@ -225,6 +225,10 @@ export default function App() {
           nowPlaying={nowPlaying}
           streamError={streamError}
           clearStreamError={() => setStreamError('')}
+          onStop={() => {
+            setSelected(null);
+            setNowPlaying('');
+          }}
         />
       </div>
     </div>
