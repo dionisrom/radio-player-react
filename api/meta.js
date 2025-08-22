@@ -1,6 +1,8 @@
 const https = require('https');
 const http = require('http');
+
 const { URL } = require('url');
+const fetchIcyMetadata = require('./icyFallback');
 
 // Pooled SSE ICY metadata proxy. Keeps one upstream connection per unique stream URL
 // and fans out parsed metadata to all connected SSE clients.
@@ -30,7 +32,8 @@ function sendEventToRes(res, event, data) {
   } catch (e) {}
 }
 
-function startPoolForUrl(target) {
+
+async function startPoolForUrl(target) {
   if (pools.has(target)) return pools.get(target);
   const urlObj = new URL(target);
   const client = urlObj.protocol === 'https:' ? https : http;
@@ -50,7 +53,29 @@ function startPoolForUrl(target) {
     bytesUntilMeta: 0,
     pendingMeta: Buffer.alloc(0),
     awaitingMeta: 0,
+    fallbackTried: false,
   };
+
+  function handleHttpError(err) {
+    if (!pool.fallbackTried) {
+      pool.fallbackTried = true;
+      fetchIcyMetadata(target)
+        .then(meta => {
+          for (const res of pool.clients) sendEventToRes(res, 'metadata', JSON.stringify({ streamTitle: meta.StreamTitle || '', raw: JSON.stringify(meta) }));
+        })
+        .catch(fallbackErr => {
+          for (const res of pool.clients) {
+            try { sendEventToRes(res, 'error', '{}'); res.end(); } catch (e) {}
+          }
+          pools.delete(target);
+        });
+    } else {
+      for (const res of pool.clients) {
+        try { sendEventToRes(res, 'error', '{}'); res.end(); } catch (e) {}
+      }
+      pools.delete(target);
+    }
+  }
 
   const req = client.request(urlObj, options, (proxyRes) => {
     pool.proxyRes = proxyRes;
@@ -116,22 +141,10 @@ function startPoolForUrl(target) {
       }
       pools.delete(target);
     });
-    proxyRes.on('error', (err) => {
-      console.error('Pool upstream error', err);
-      for (const res of pool.clients) {
-        try { sendEventToRes(res, 'error', '{}'); res.end(); } catch (e) {}
-      }
-      pools.delete(target);
-    });
+    proxyRes.on('error', handleHttpError);
   });
 
-  req.on('error', (err) => {
-    console.error('Pool request error', err);
-    for (const res of pool.clients) {
-      try { sendEventToRes(res, 'error', '{}'); res.end(); } catch (e) {}
-    }
-    pools.delete(target);
-  });
+  req.on('error', handleHttpError);
 
   req.end();
   pool.req = req;
@@ -163,28 +176,32 @@ module.exports = (req, res) => {
     });
     res.write('\n');
 
-    const pool = startPoolForUrl(target);
-    // immediately tell client if upstream has no icy-metaint (we'll detect when proxyRes arrives)
+  const poolPromise = startPoolForUrl(target);
+  // poolPromise may be a pool object or a Promise
+  const handlePool = (pool) => {
+    if (!pool) return;
     pool.clients.add(res);
-
     // If the upstream already determined it has no metadata, notify client
     if (pool.icyMetaInt === 0 && pool.proxyRes) {
       sendEventToRes(res, 'nometadata', '{}');
-      // schedule close shortly
       setTimeout(() => { try { res.end(); } catch (e) {} }, 1100);
     }
-
     // When the client closes, remove it
     req.on('close', () => {
       pool.clients.delete(res);
       try { res.end(); } catch (e) {}
-      // if no clients remain, close upstream
       if (pool.clients.size === 0) {
         try { pool.req.abort && pool.req.abort(); } catch (e) {}
         try { pool.proxyRes && pool.proxyRes.destroy && pool.proxyRes.destroy(); } catch (e) {}
         pools.delete(target);
       }
     });
+  };
+  if (poolPromise && typeof poolPromise.then === 'function') {
+    poolPromise.then(handlePool);
+  } else {
+    handlePool(poolPromise);
+  }
   } catch (err) {
     console.error('Meta pool handler error', err);
     try { res.end(); } catch (e) {}

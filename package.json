@@ -10,6 +10,7 @@
   "dependencies": {
     "framer-motion": "^12.23.12",
     "hls.js": "^1.6.10",
+    "icy": "^2.1.0",
     "jsmediatags": "^3.9.5",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
