@@ -218,9 +218,9 @@ export default function App() {
           </>
         )}
       </Modal>
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6">
+        <div className="mt-6 w-full">
           <main
-            className={`space-y-4 rounded-2xl p-2 md:p-16 pb-16 transition-all min-w-0 ${visBg ? 'backdrop-blur-lg bg-white/30 dark:bg-black/30 border border-white/20 dark:border-black/20 shadow-xl' : ''}`}
+            className={`space-y-4 rounded-2xl p-2 md:p-16 pb-16 transition-all min-w-0 w-full ${visBg ? 'backdrop-blur-lg bg-white/30 dark:bg-black/30 border border-white/20 dark:border-black/20 shadow-xl' : ''}`}
           >
             <TopCarousel
               favorites={favorites}
@@ -238,34 +238,25 @@ export default function App() {
               theme={theme}
             />
           </main>
-
-          <aside
-            className={`glass p-4 rounded-2xl transition-all ${visBg ? 'backdrop-blur-lg bg-white/30 dark:bg-black/30 border border-white/20 dark:border-black/20 shadow-xl' : ''}`}
-          >
-            <Player
-              station={selected}
-              onClose={() => setSelected(null)}
-              toggleFavorite={toggleFavorite}
-              isFavorite={!!(selected && favorites.find(s => s.stationuuid === selected.stationuuid))}
-              setVisBg={setVisBg}
-              setAnalyserRef={setAnalyserRef}
-              setAudioCtxFromApp={setAudioCtx}
-              recentlyPlayed={recentlyPlayed}
-              registerControls={registerControls}
-              setPlayingOnApp={setPlayerPlaying}
-              setNowPlaying={setNowPlaying}
-              onStreamError={setStreamError}
-              theme={theme}
-              registerEQProps={setEQProps}
-            />
-            {!visBg && (
-              <Visualization analyser={analyserRef} audioCtx={audioCtx} visBg={visBg} setVisBg={setVisBg} />
-            )}
-
-          </aside>
         </div>
 
-        {/* Persistent footer player (always rendered) */}
+        {/* Headless Player: handles all audio logic, EQ, metadata, error handling, exposes controls to FooterPlayer */}
+        <Player
+          station={selected}
+          toggleFavorite={toggleFavorite}
+          isFavorite={!!(selected && favorites.find(s => s.stationuuid === selected.stationuuid))}
+          setVisBg={setVisBg}
+          setAnalyserRef={setAnalyserRef}
+          setAudioCtxFromApp={setAudioCtx}
+          recentlyPlayed={recentlyPlayed}
+          registerControls={registerControls}
+          setPlayingOnApp={setPlayerPlaying}
+          setNowPlaying={setNowPlaying}
+          onStreamError={setStreamError}
+          theme={theme}
+          registerEQProps={setEQProps}
+        />
+
         <FooterPlayer
           station={selected}
           isFavorite={!!(selected && favorites.find(s => s.stationuuid === selected.stationuuid))}

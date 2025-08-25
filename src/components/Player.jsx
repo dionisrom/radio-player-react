@@ -725,28 +725,7 @@ export default function Player({ station, onClose, toggleFavorite, isFavorite, s
 
   return (
     <div>
-
-  {/* EQ UI moved to MoreMenu modal */}
-
-
-      {/* Recently Played List */}
-      {recentlyPlayed.length > 0 && (
-        <div className="mt-6">
-          <div className="font-semibold text-sm mb-2 opacity-80">Recently Played</div>
-          <ul className="space-y-1">
-            {recentlyPlayed.map(st => (
-              <li key={st.stationuuid} className="flex items-center gap-2 px-2 py-1 rounded-lg bg-white/20 dark:bg-black/20 backdrop-blur-xs hover:bg-white/30 dark:hover:bg-black/30 transition cursor-pointer"
-                  onClick={() => st.stationuuid !== station?.stationuuid && st.name && onClose ? onClose() || setTimeout(() => window.dispatchEvent(new CustomEvent('select-station', { detail: st })), 0) : undefined}>
-                <span className="truncate flex-1" title={st.name}>{st.name}</span>
-                <span className="text-xs text-gray-400">{st.country}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <audio key={audioKey} ref={audioRef} />
-
+       <audio key={audioKey} ref={audioRef} />
     </div>
   );
 }
