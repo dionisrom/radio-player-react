@@ -145,41 +145,138 @@ function FavoritesCarousel({ favorites, onSelectStation, toggleFavorite }) {
 }
 
 
-function TopCarousel({ favorites, onSelectStation, toggleFavorite, component }) {
-  const [section, setSection] = useState(favorites.length > 0 ? 'favorites' : 'discover');
+
+function RecentlyPlayedCarousel({ recentlyPlayed, onSelectStation, favorites, toggleFavorite }) {
+  const containerRef = useRef(null);
+  useDragScroll(containerRef);
+  const [showLeft, setShowLeft] = useState(false);
+  const [showRight, setShowRight] = useState(false);
 
   useEffect(() => {
-    if (favorites.length > 0) setSection('favorites');
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => {
+      setShowLeft(el.scrollLeft > 5);
+      setShowRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 5);
+    };
+    update();
+    el.addEventListener('scroll', update);
+    window.addEventListener('resize', update);
+    return () => {
+      el.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [recentlyPlayed.length]);
+
+  const scrollBy = (amount) => {
+    const el = containerRef.current;
+    if (!el) return;
+    let scrollAmount = amount;
+    if (!isMobile()) {
+      scrollAmount = amount > 0 ? el.clientWidth * 0.4 : -el.clientWidth * 0.4;
+    }
+    el.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+  };
+
+  return (
+    <div className="relative">
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-xl font-bold">Recently Played</h2>
+      </div>
+      <div className="relative flex items-stretch">
+        {showLeft && (
+          <div className="absolute left-0 top-0 bottom-0 flex items-center z-20" style={{height: '100%', width: 48, margin: 0, padding: 0}}>
+            <div className="glass flex items-center justify-center h-full w-full rounded-l-lg" style={{background: 'rgba(255,255,255,0.25)', backdropFilter: 'blur(8px) saturate(120%)'}}>
+              <button
+                className="p-1 rounded-full focus:outline-hidden"
+                style={{ pointerEvents: 'auto' }}
+                onClick={() => scrollBy(-220)}
+                aria-label="Scroll left"
+              >
+                <Arrow direction="left" />
+              </button>
+            </div>
+          </div>
+        )}
+        {showRight && (
+          <div className="absolute right-0 top-0 bottom-0 flex items-center z-20" style={{height: '100%', width: 48, margin: 0, padding: 0}}>
+            <div className="glass flex items-center justify-center h-full w-full rounded-r-lg" style={{background: 'rgba(255,255,255,0.25)', backdropFilter: 'blur(8px) saturate(120%)'}}>
+              <button
+                className="p-1 rounded-full focus:outline-hidden"
+                style={{ pointerEvents: 'auto' }}
+                onClick={() => scrollBy(220)}
+                aria-label="Scroll right"
+              >
+                <Arrow direction="right" />
+              </button>
+            </div>
+          </div>
+        )}
+        <div
+          ref={containerRef}
+          className="flex gap-4 overflow-x-auto hide-scrollbar overflow-y-hidden pb-2 cursor-grab w-full"
+          style={{ scrollBehavior: 'smooth' }}
+        >
+          {recentlyPlayed.length === 0 ? (
+            <div className="text-gray-500">No recently played stations</div>
+          ) : (
+            recentlyPlayed.map(station => (
+              <StationCardCarousel
+                key={station.stationuuid}
+                station={station}
+                onPlay={() => onSelectStation(station)}
+                isFav={!!favorites.find(f => f.stationuuid === station.stationuuid)}
+                onToggleFav={() => toggleFavorite(station)}
+              />
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TopCarousel({ favorites, onSelectStation, toggleFavorite, recentlyPlayed }) {
+  const [section, setSection] = useState(
+    favorites && favorites.length > 0
+      ? 'favorites'
+      : 'discover'
+      ? 'discover'
+      : recentlyPlayed && recentlyPlayed.length > 0
+      ? 'recentlyPlayed'
+      : 'discover'
+  );
+
+  const [discoverStations, setDiscoverStations] = useState([]);
+  const [discoverLoading, setDiscoverLoading] = useState(true);
+
+  useEffect(() => {
+    if (favorites && favorites.length > 0) setSection('favorites');
+    else if (recentlyPlayed && recentlyPlayed.length > 0) setSection('recentlyPlayed');
     else setSection('discover');
-  }, [favorites.length]);
+  }, [favorites && favorites.length, recentlyPlayed && recentlyPlayed.length]);
 
-  const Component = component;
+  useEffect(() => {
+    let isMounted = true;
+    setDiscoverLoading(true);
+    (async () => {
+      try {
+        const results = await fetchTopVoted({ perPage: 12 });
+        if (isMounted) setDiscoverStations(results || []);
+      } catch (err) {
+        if (isMounted) setDiscoverStations([]);
+      } finally {
+        if (isMounted) setDiscoverLoading(false);
+      }
+    })();
+    return () => { isMounted = false };
+  }, []);
 
-  // Discover carousel: mirrors FavoritesCarousel but fetches trending stations
-  function DiscoverCarousel({ onSelectStation, favorites, toggleFavorite }) {
+  function DiscoverCarousel({ onSelectStation, favorites, toggleFavorite, stations, loading }) {
     const containerRef = useRef(null);
-  useDragScroll(containerRef);
-    const [stations, setStations] = useState([]);
-    const [loading, setLoading] = useState(true);
+    useDragScroll(containerRef);
     const [showLeft, setShowLeft] = useState(false);
     const [showRight, setShowRight] = useState(false);
-
-    useEffect(() => {
-      let isMounted = true;
-      setLoading(true);
-      (async () => {
-        try {
-          const results = await fetchTopVoted({ perPage: 12 });
-          if (isMounted) setStations(results || []);
-        } catch (err) {
-          console.error('Failed to fetch discover stations', err);
-          if (isMounted) setStations([]);
-        } finally {
-          if (isMounted) setLoading(false);
-        }
-      })();
-      return () => { isMounted = false };
-    }, []);
 
     useEffect(() => {
       const el = containerRef.current;
@@ -197,7 +294,6 @@ function TopCarousel({ favorites, onSelectStation, toggleFavorite, component }) 
       };
     }, [stations.length]);
 
-    // On PC, scroll by a moderate amount for a more page-like effect
     const scrollBy = (amount) => {
       const el = containerRef.current;
       if (!el) return;
@@ -214,7 +310,6 @@ function TopCarousel({ favorites, onSelectStation, toggleFavorite, component }) 
           <h2 className="text-xl font-bold">Discover</h2>
         </div>
         <div className="relative flex items-stretch">
-          {/* Left Arrow Glass Container */}
           {showLeft && (
             <div className="absolute left-0 top-0 bottom-0 flex items-center z-20" style={{height: '100%', width: 48, margin: 0, padding: 0}}>
               <div className="glass flex items-center justify-center h-full w-full rounded-l-lg" style={{background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(8px) saturate(120%)'}}>
@@ -229,7 +324,6 @@ function TopCarousel({ favorites, onSelectStation, toggleFavorite, component }) 
               </div>
             </div>
           )}
-          {/* Right Arrow Glass Container */}
           {showRight && (
             <div className="absolute right-0 top-0 bottom-0 flex items-center z-20" style={{height: '100%', width: 48, margin: 0, padding: 0}}>
               <div className="glass flex items-center justify-center h-full w-full rounded-r-lg" style={{background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(8px) saturate(120%)'}}>
@@ -285,13 +379,27 @@ function TopCarousel({ favorites, onSelectStation, toggleFavorite, component }) 
           <span className="inline-block min-w-[1.5em] px-2 py-0.5 rounded-full bg-white/80 dark:bg-black/40 text-blue-600 dark:text-blue-300 text-xs font-bold align-middle border border-blue-200 dark:border-blue-700 ml-1">{favorites.length}</span>
         </button>
         <button
-          className={`px-4 py-2 rounded-sm font-semibold transition-colors ${section === 'discover' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+          className={`px-4 py-2 rounded-sm font-semibold transition-colors flex items-center gap-2 ${section === 'discover' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
           onClick={() => handleSectionChange('discover')}
         >
-          Discover
+          <span>Discover</span>
+          <span className="inline-block min-w-[1.5em] px-2 py-0.5 rounded-full bg-white/80 dark:bg-black/40 text-blue-600 dark:text-blue-300 text-xs font-bold align-middle border border-blue-200 dark:border-blue-700 ml-1">{discoverStations.length}</span>
+        </button>
+        <button
+          className={`px-4 py-2 rounded-sm font-semibold transition-colors flex items-center gap-2 ${section === 'recentlyPlayed' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+          onClick={() => handleSectionChange('recentlyPlayed')}
+          disabled={!recentlyPlayed || recentlyPlayed.length === 0}
+        >
+          <span>Recently Played</span>
+          <span className="inline-block min-w-[1.5em] px-2 py-0.5 rounded-full bg-white/80 dark:bg-black/40 text-blue-600 dark:text-blue-300 text-xs font-bold align-middle border border-blue-200 dark:border-blue-700 ml-1">{recentlyPlayed ? recentlyPlayed.length : 0}</span>
         </button>
       </div>
       <div className="min-h-[220px] w-full max-w-full overflow-x-hidden">
+        {section === 'recentlyPlayed' && recentlyPlayed && recentlyPlayed.length > 0 && (
+          <div className="w-full">
+            <RecentlyPlayedCarousel recentlyPlayed={recentlyPlayed} onSelectStation={onSelectStation} favorites={favorites} toggleFavorite={toggleFavorite} />
+          </div>
+        )}
         {section === 'favorites' && favorites.length > 0 && (
           <div className="w-full">
             <FavoritesCarousel favorites={favorites} onSelectStation={onSelectStation} toggleFavorite={toggleFavorite} />
@@ -299,7 +407,13 @@ function TopCarousel({ favorites, onSelectStation, toggleFavorite, component }) 
         )}
         {section === 'discover' && (
           <div className="w-full">
-            <DiscoverCarousel onSelectStation={onSelectStation} favorites={favorites} toggleFavorite={toggleFavorite} />
+            <DiscoverCarousel
+              onSelectStation={onSelectStation}
+              favorites={favorites}
+              toggleFavorite={toggleFavorite}
+              stations={discoverStations}
+              loading={discoverLoading}
+            />
           </div>
         )}
       </div>

@@ -226,6 +226,7 @@ export default function App() {
               favorites={favorites}
               onSelectStation={handleSelectStation}
               toggleFavorite={toggleFavorite}
+              recentlyPlayed={recentlyPlayed}
             />
             <StationList
               onSelectStation={handleSelectStation}
